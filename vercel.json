@@ -4,8 +4,8 @@
     "app": {
       "root": ".",
       "framework": "vite",
-      "installCommand": "npm install",
-      "buildCommand": "npm run build",
+      "installCommand": "bun install",
+      "buildCommand": "bun run build",
       "outputDirectory": "dist"
     },
     "phase-one": {
