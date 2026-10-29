@@ -7,10 +7,24 @@
     },
     "phase1": {
       "root": "phase1",
-      "framework": "fastapi"
+      "framework": "fastapi",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "app",
+          "format": "url",
+          "env": "APP_URL"
+        }
+      ]
     }
   },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "phase1"
+      }
+    },
     {
       "source": "/(.*)",
       "destination": {
