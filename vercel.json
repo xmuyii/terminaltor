@@ -5,7 +5,7 @@
       "root": ".",
       "framework": "vite"
     },
-    "phase1": {
+    "phase-one": {
       "root": "phase1",
       "framework": "fastapi",
       "bindings": [
@@ -22,7 +22,7 @@
     {
       "source": "/api/(.*)",
       "destination": {
-        "service": "phase1"
+        "service": "phase-one"
       }
     },
     {
