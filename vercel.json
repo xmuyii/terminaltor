@@ -1,5 +1,5 @@
 {
-    "$schema": "https://openapi.vercel.sh/vercel.json",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "app": {
       "root": ".",
@@ -13,7 +13,9 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": {
+        "service": "app"
+      }
     }
   ]
 }
