@@ -1,4 +1,15 @@
 {
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "framework": "vite"
+    },
+    "phase1": {
+      "root": "phase1",
+      "framework": "fastapi"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
