@@ -33,7 +33,7 @@ export interface Quest {
   level: number;
   title: string;
   subtitle: string;
-  category: 'Fundamentals' | 'Data Structures' | 'Algorithms' | 'Game Dev';
+  category: 'Fundamentals' | 'Data Structures' | 'Algorithms' | 'Game Dev' | 'Final Boss';
   description: string;
   lore: string;
   objectives: string[];
@@ -46,6 +46,7 @@ export interface Quest {
   badge_icon: string;
   is_pro: boolean;
   tier?: number;
+  is_boss?: boolean;
 }
 
 export interface UserProgress {

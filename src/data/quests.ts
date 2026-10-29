@@ -246,7 +246,7 @@ assert calculate_power(50, 3) == 150, "calculate_power(50, 3) should return 150"
     badge_title: 'Game Engine Architect',
     badge_icon: 'Gamepad2',
     is_pro: true,
-    lore: 'The ultimate milestone of The Tech Academy: assemble your first text RPG battle simulator! Track player HP, simulate enemy encounters, and print round-by-round battle dispatches.',
+    lore: 'The penultimate milestone before the final boss of TERMINALTOR: assemble your first text RPG battle simulator! Track player HP, simulate enemy encounters, and print round-by-round battle dispatches.',
     description: 'Combine variables, conditionals, loops, and math to create a playable turn-based game loop in Python.',
     objectives: [
       'Initialize `player_hp = 100` and `enemy_hp = 60`.',
@@ -254,7 +254,7 @@ assert calculate_power(50, 3) == 150, "calculate_power(50, 3) should return 150"
       'Each turn, player deals 20 damage to enemy, and enemy deals 15 to player.',
       'When loop ends, print "Victory: Cyber Beast Defeated!" if player survived.'
     ],
-    starter_code: `# Level 5: Text-Based Cyber Game Engine [Sovereign Creator Pass]
+    starter_code: `# Level 5: Text-Based Cyber Game Engine [TERMINALTOR]
 # Task: Create an automated turn-based combat engine loop
 
 player_hp = 100
@@ -310,6 +310,86 @@ print(f"Total Turns: {turns}")
         assertion_code: `assert turns == 3, f"Expected 3 turns, resolved in {turns}"
 assert player_hp == 70, f"Expected player_hp to be 70, got {player_hp}"
 assert enemy_hp <= 0, "Enemy HP must be 0 or less"`
+      }
+    ]
+  },
+  {
+    id: 'quest-terminaltor',
+    level: 6,
+    title: 'The Terminaltor: Final Core Overthrow',
+    subtitle: 'Face the ultimate rogue AI overseer. Defeat the Terminaltor to finish the game!',
+    category: 'Final Boss',
+    xp_reward: 1000,
+    badge_title: 'Terminaltor Executioner',
+    badge_icon: 'Skull',
+    is_pro: false,
+    is_boss: true,
+    lore: 'At the deepest level of the Ose Engine mainframe lies The Terminaltor—a rogue, self-evolving cybernetic intelligence created by IRETE LABS that has seized root control. It locks down all compilers in a perpetual death-spiral. To finish TERMINALTOR, you must code the master override sequence that computes total vulnerability bypass across all defense nodes and shuts down the boss for good!',
+    description: 'Implement the `defeat_terminaltor(boss_power, defense_nodes)` function. Sum the defense node bypass values, compare against boss power, and trigger the final system restore.',
+    objectives: [
+      'Define function `defeat_terminaltor(boss_power, defense_nodes)`.',
+      'Sum all integer values in the `defense_nodes` list.',
+      'If total >= `boss_power`, return "TERMINALTOR DEFEATED: SYSTEM RESTORED".',
+      'Otherwise, return "CRITICAL FAILURE: INSUFFICIENT PURGE POWER".',
+      'Execute with `boss_power = 500` and `defense_nodes = [120, 180, 250]`.',
+      'Print the result and "=== GAME COMPLETED: YOU HAVE FINISHED TERMINALTOR ===".'
+    ],
+    starter_code: `# FINAL BOSS: THE TERMINALTOR [IRETE LABS • Powered by Ose Engine]
+# Objective: Write the purge function and defeat the ultimate boss to finish the game!
+
+def defeat_terminaltor(boss_power, defense_nodes):
+    # TODO: Calculate sum of defense_nodes
+    total_power = sum(defense_nodes)
+    
+    # TODO: Compare against boss_power and return appropriate status
+    if total_power >= boss_power:
+        return "TERMINALTOR DEFEATED: SYSTEM RESTORED"
+    return "CRITICAL FAILURE: INSUFFICIENT PURGE POWER"
+
+# Core Engagement Simulation:
+boss_power = 500
+defense_nodes = [120, 180, 250]
+
+result = defeat_terminaltor(boss_power, defense_nodes)
+print(result)
+
+if result == "TERMINALTOR DEFEATED: SYSTEM RESTORED":
+    print("=== GAME COMPLETED: YOU HAVE FINISHED TERMINALTOR ===")
+`,
+    solution_code: `def defeat_terminaltor(boss_power, defense_nodes):
+    total_power = sum(defense_nodes)
+    if total_power >= boss_power:
+        return "TERMINALTOR DEFEATED: SYSTEM RESTORED"
+    return "CRITICAL FAILURE: INSUFFICIENT PURGE POWER"
+
+boss_power = 500
+defense_nodes = [120, 180, 250]
+result = defeat_terminaltor(boss_power, defense_nodes)
+print(result)
+if result == "TERMINALTOR DEFEATED: SYSTEM RESTORED":
+    print("=== GAME COMPLETED: YOU HAVE FINISHED TERMINALTOR ===")
+`,
+    hints: [
+      'Use Python builtin `sum(defense_nodes)` or iterate through the list with a for loop to calculate total power.',
+      'Check if `total_power >= boss_power` using an `if/else` block.',
+      'Ensure the exact return string "TERMINALTOR DEFEATED: SYSTEM RESTORED" is returned when power is sufficient.'
+    ],
+    test_cases: [
+      {
+        id: 'tc-boss-1',
+        title: 'Core Override Output Check',
+        description: 'Verify the boss is defeated and game completion announcement is printed.',
+        expected_output: '=== GAME COMPLETED: YOU HAVE FINISHED TERMINALTOR ==='
+      },
+      {
+        id: 'tc-boss-2',
+        title: 'Function Logic & Assertion Check',
+        description: 'Test defeat_terminaltor with diverse inputs for winning and losing thresholds.',
+        assertion_code: `assert callable(defeat_terminaltor), "defeat_terminaltor must be defined as a function"
+assert defeat_terminaltor(500, [100, 200, 300]) == "TERMINALTOR DEFEATED: SYSTEM RESTORED", "500 vs 600 power should defeat boss"
+assert defeat_terminaltor(800, [100, 200, 300]) == "CRITICAL FAILURE: INSUFFICIENT PURGE POWER", "800 vs 600 power should return failure"
+assert defeat_terminaltor(100, [50, 50]) == "TERMINALTOR DEFEATED: SYSTEM RESTORED", "Exact match should defeat boss"
+assert result == "TERMINALTOR DEFEATED: SYSTEM RESTORED", "Main simulation must defeat the Terminaltor"`
       }
     ]
   }

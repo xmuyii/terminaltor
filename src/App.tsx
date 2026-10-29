@@ -431,11 +431,24 @@ export default function App() {
         </div>
       )}
 
-      {/* Minimal Footer */}
+      {/* Official IRETE LABS Footer */}
       <footer className="border-t border-slate-900 bg-[#050810] px-6 py-4 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <span className="font-semibold text-slate-400">The Tech Academy</span>
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-center sm:text-left">
+            <span className="font-mono text-slate-400">
+              Studio: <strong className="text-slate-200 font-bold">IRETE LABS</strong>
+            </span>
+            <span className="text-slate-700 hidden sm:inline">•</span>
+            <span className="font-mono text-slate-400">
+              Product: <strong className="text-emerald-400 font-bold">TERMINALTOR</strong>
+            </span>
+            <span className="text-slate-700 hidden sm:inline">•</span>
+            <span className="font-mono text-slate-400">
+              Tech: <strong className="text-teal-300 font-bold">Powered by Ose Engine</strong>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4 text-[11px] font-medium">
             <button
               type="button"
               onClick={() => setCurrentView('academy-signup')}

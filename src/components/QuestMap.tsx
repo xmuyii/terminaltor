@@ -12,6 +12,8 @@ import {
   ShieldAlert,
   Flame,
   RotateCcw,
+  Skull,
+  Crown,
 } from 'lucide-react';
 import { QUESTS } from '../data/quests';
 import { Profile, UserProgress } from '../types';
@@ -35,6 +37,7 @@ export const QuestMap: React.FC<QuestMapProps> = ({
   const completedCount = Object.values(progress).filter((p) => p.completed).length;
   const totalQuests = QUESTS.length;
   const progressPercent = Math.round((completedCount / totalQuests) * 100);
+  const isTerminaltorDefeated = Boolean(progress['quest-terminaltor']?.completed);
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -46,6 +49,8 @@ export const QuestMap: React.FC<QuestMapProps> = ({
         return 'text-purple-400 border-purple-800/60 bg-purple-950/30';
       case 'Game Dev':
         return 'text-amber-400 border-amber-800/60 bg-amber-950/30';
+      case 'Final Boss':
+        return 'text-rose-400 border-rose-500/80 bg-rose-950/40 font-bold';
       default:
         return 'text-slate-400 border-slate-800 bg-slate-900';
     }
@@ -61,6 +66,10 @@ export const QuestMap: React.FC<QuestMapProps> = ({
         return <Layers className="w-5 h-5 text-purple-400" />;
       case 'Gamepad2':
         return <Gamepad2 className="w-5 h-5 text-sky-400" />;
+      case 'Skull':
+        return <Skull className="w-5 h-5 text-rose-500 animate-pulse" />;
+      case 'Crown':
+        return <Crown className="w-5 h-5 text-amber-400" />;
       default:
         return <Sparkles className="w-5 h-5 text-amber-400" />;
     }
@@ -68,6 +77,48 @@ export const QuestMap: React.FC<QuestMapProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      {/* Game Finished Congratulations Banner when Terminaltor is Defeated */}
+      {isTerminaltorDefeated && (
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-[#200714] via-[#160920] to-[#0a1815] border-2 border-rose-500/80 shadow-2xl shadow-rose-950/60 text-white relative overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border-2 border-rose-400 flex items-center justify-center text-3xl shadow-lg shrink-0">
+                👑
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-rose-400 bg-rose-950/80 border border-rose-600/60 px-2 py-0.5 rounded">
+                    GAME FINISHED • 100% CONQUERED
+                  </span>
+                  <span className="text-xs text-amber-400 font-mono font-bold">★ MASTER STATUS</span>
+                </div>
+                <h2 className="text-2xl font-black text-white tracking-tight">
+                  You Have Defeated The Terminaltor!
+                </h2>
+                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                  Congratulations! You conquered all 6 sectors of <strong>TERMINALTOR</strong>. The rogue mainframe has been purged and the coding grid is restored.
+                </p>
+                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-mono text-slate-400">
+                  <span>Studio: <strong className="text-white">IRETE LABS</strong></span>
+                  <span>•</span>
+                  <span>Product: <strong className="text-emerald-400">TERMINALTOR</strong></span>
+                  <span>•</span>
+                  <span>Tech: <strong className="text-teal-300">Powered by Ose Engine</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onSelectQuest('quest-terminaltor')}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition-all shrink-0 cursor-pointer flex items-center gap-2"
+            >
+              <Skull className="w-4 h-4" />
+              <span>Replay Boss Battle</span>
+            </button>
+          </div>
+        </div>
+      )}
       {/* Student Progress Overview Header */}
       <div className="p-6 bg-[#0a0f1d] border border-slate-800 rounded-xl shadow-lg">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
@@ -164,36 +215,60 @@ export const QuestMap: React.FC<QuestMapProps> = ({
           {QUESTS.map((quest) => {
             const isCompleted = Boolean(progress[quest.id]?.completed);
             const isLockedPro = quest.is_pro && !profile.has_pro_pass && profile.role === 'student';
+            const isBoss = Boolean(quest.is_boss);
 
             return (
               <div
                 key={quest.id}
-                className={`flex flex-col bg-[#0b1120] border rounded-xl overflow-hidden shadow-lg transition-all ${
-                  isCompleted
-                    ? 'border-emerald-800/70 hover:border-emerald-600'
+                className={`flex flex-col rounded-xl overflow-hidden shadow-lg transition-all ${
+                  isBoss
+                    ? 'col-span-1 md:col-span-2 lg:col-span-3 bg-gradient-to-r from-[#1c0817] via-[#100718] to-[#1c0817] border-2 border-rose-500/80 shadow-2xl shadow-rose-950/50'
+                    : isCompleted
+                    ? 'bg-[#0b1120] border border-emerald-800/70 hover:border-emerald-600'
                     : isLockedPro
-                    ? 'border-amber-900/50 opacity-90'
-                    : 'border-slate-800 hover:border-sky-500/50'
+                    ? 'bg-[#0b1120] border border-amber-900/50 opacity-90'
+                    : 'bg-[#0b1120] border border-slate-800 hover:border-sky-500/50'
                 }`}
               >
                 {/* Card Header Banner */}
-                <div className="p-4 bg-slate-900/80 border-b border-slate-800 flex items-start justify-between">
+                <div className={`p-4 border-b flex items-start justify-between ${
+                  isBoss ? 'bg-rose-950/40 border-rose-900/60' : 'bg-slate-900/80 border-slate-800'
+                }`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                    <div className={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${
+                      isBoss ? 'bg-rose-900/40 border-rose-500/60 text-rose-400' : 'bg-slate-800 border border-slate-700'
+                    }`}>
                       {getBadgeIcon(quest.badge_icon)}
                     </div>
                     <div>
-                      <div className="text-[11px] font-mono text-sky-400 font-semibold">
-                        LEVEL {quest.level}
+                      <div className={`text-[11px] font-mono font-semibold flex items-center gap-1.5 ${
+                        isBoss ? 'text-rose-400 font-bold uppercase tracking-wider' : 'text-sky-400'
+                      }`}>
+                        {isBoss ? (
+                          <>
+                            <Skull className="w-3.5 h-3.5" />
+                            <span>FINAL BOSS • LEVEL {quest.level}</span>
+                          </>
+                        ) : (
+                          <span>LEVEL {quest.level}</span>
+                        )}
                       </div>
-                      <h4 className="text-sm font-bold text-slate-100">{quest.title}</h4>
+                      <h4 className={`font-bold ${isBoss ? 'text-base text-white font-black' : 'text-sm text-slate-100'}`}>
+                        {quest.title}
+                      </h4>
                     </div>
                   </div>
 
                   {isCompleted ? (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                    <span className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border ${
+                      isBoss ? 'bg-rose-950/90 text-rose-300 border-rose-500 font-bold' : 'text-emerald-400 bg-emerald-950/80 border-emerald-800'
+                    }`}>
                       <CheckCircle2 className="w-3 h-3" />
-                      <span>SOLVED</span>
+                      <span>{isBoss ? '👑 DEFEATED' : 'SOLVED'}</span>
+                    </span>
+                  ) : isBoss ? (
+                    <span className="text-[10px] font-mono font-bold text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded border border-rose-600/60 animate-pulse">
+                      BOSS FIGHT
                     </span>
                   ) : quest.is_pro ? (
                     <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">
@@ -208,14 +283,18 @@ export const QuestMap: React.FC<QuestMapProps> = ({
 
                 {/* Card Body */}
                 <div className="p-4 flex-1 space-y-3 text-xs">
-                  <p className="text-slate-400 leading-relaxed line-clamp-2">
+                  <p className={`leading-relaxed line-clamp-2 ${isBoss ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
                     {quest.description}
                   </p>
 
-                  <div className="p-2.5 bg-slate-950/60 rounded border border-slate-800/80 text-[11px] text-slate-300 space-y-1">
-                    <div className="font-semibold text-slate-400">Objectives:</div>
-                    <ul className="list-disc list-inside space-y-0.5 text-slate-400">
-                      {quest.objectives.slice(0, 2).map((o, idx) => (
+                  <div className={`p-2.5 rounded border text-[11px] space-y-1 ${
+                    isBoss ? 'bg-black/50 border-rose-900/60 text-slate-200' : 'bg-slate-950/60 border-slate-800/80 text-slate-300'
+                  }`}>
+                    <div className={`font-semibold ${isBoss ? 'text-rose-300' : 'text-slate-400'}`}>
+                      {isBoss ? 'Combat Objectives:' : 'Objectives:'}
+                    </div>
+                    <ul className={`list-disc list-inside space-y-0.5 ${isBoss ? 'text-slate-300' : 'text-slate-400'}`}>
+                      {quest.objectives.slice(0, isBoss ? 3 : 2).map((o, idx) => (
                         <li key={idx} className="truncate">{o}</li>
                       ))}
                     </ul>
@@ -232,7 +311,7 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                 </div>
 
                 {/* Card Footer Action */}
-                <div className="p-4 bg-slate-950/60 border-t border-slate-900">
+                <div className={`p-4 border-t ${isBoss ? 'bg-black/60 border-rose-950' : 'bg-slate-950/60 border-slate-900'}`}>
                   {isLockedPro ? (
                     <button
                       type="button"
@@ -246,14 +325,26 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                     <button
                       type="button"
                       onClick={() => onSelectQuest(quest.id)}
-                      className={`w-full flex items-center justify-center gap-2 py-2 text-xs font-bold rounded transition-colors ${
-                        isCompleted
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        isBoss
+                          ? isCompleted
+                            ? 'bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-600/80 font-black'
+                            : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black shadow-lg shadow-rose-600/30 active:scale-95'
+                          : isCompleted
                           ? 'bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-900/50'
                           : 'bg-sky-500 hover:bg-sky-400 text-white shadow-sm'
                       }`}
                     >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>{isCompleted ? 'Replay Challenge' : 'Start Workspace'}</span>
+                      {isBoss ? <Skull className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+                      <span>
+                        {isBoss
+                          ? isCompleted
+                            ? '👑 Replay Terminaltor Battle'
+                            : '⚔️ Fight The Terminaltor (Final Battle)'
+                          : isCompleted
+                          ? 'Replay Challenge'
+                          : 'Start Workspace'}
+                      </span>
                     </button>
                   )}
                 </div>

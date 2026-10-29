@@ -20,9 +20,9 @@ class TestPWASpecification(unittest.TestCase):
             data = json.load(f)
 
         self.assertIn("name", data)
-        self.assertIn(data["name"], ["The Tech Academy", "Sovereign Academy"])
+        self.assertIn(data["name"], ["The Tech Academy", "Sovereign Academy", "TERMINALTOR", "Terminaltor"])
         self.assertIn("short_name", data)
-        self.assertIn(data["short_name"], ["TechAcademy", "The Tech Academy", "Sovereign"])
+        self.assertIn(data["short_name"], ["TechAcademy", "The Tech Academy", "Sovereign", "TERMINALTOR", "Terminaltor"])
         self.assertIn("start_url", data)
         self.assertIn("display", data)
         self.assertEqual(data["display"], "standalone")

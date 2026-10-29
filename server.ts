@@ -1186,7 +1186,7 @@ app.post('/api/v1/comeback/run-check', (req: Request, res: Response) => {
     return res.json({
       action: 'push_sent',
       type: 'comeback_day_7',
-      title: 'The Tech Academy',
+      title: 'TERMINALTOR',
       body: 'Your friends are ahead. One round closes the gap.',
       dispatched: true,
     });
@@ -1196,7 +1196,7 @@ app.post('/api/v1/comeback/run-check', (req: Request, res: Response) => {
     return res.json({
       action: 'push_sent',
       type: 'comeback_day_3',
-      title: 'The Tech Academy',
+      title: 'TERMINALTOR',
       body: 'Your streak is on the line. 1 challenge brings it back.',
       dispatched: true,
     });

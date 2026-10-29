@@ -94,12 +94,24 @@ export const Navigation: React.FC<NavigationProps> = ({
           <button
             type="button"
             onClick={() => handleMobileNav('sandbox')}
-            className="text-base sm:text-lg font-black tracking-tight text-slate-100 hover:text-emerald-400 transition-colors whitespace-nowrap text-left flex items-center gap-2"
+            className="text-left flex items-center gap-2.5 group cursor-pointer"
           >
-            <span className="w-7 h-7 rounded bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-sm font-black">
-              ⚡
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-sm font-black shadow-xs group-hover:border-emerald-400 group-hover:scale-105 transition-all">
+              💀
             </span>
-            <span>The Tech Academy</span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base sm:text-lg font-black tracking-wider text-slate-100 group-hover:text-emerald-400 transition-colors">
+                  TERMINALTOR
+                </span>
+                <span className="hidden xl:inline text-[9px] font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.2 rounded">
+                  Ose Engine
+                </span>
+              </div>
+              <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase -mt-0.5">
+                IRETE LABS
+              </span>
+            </div>
           </button>
         </div>
 

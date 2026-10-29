@@ -58,7 +58,7 @@ class ComebackService:
                     msg = {
                         "user_id": user_id,
                         "type": "comeback_day_7",
-                        "title": "The Tech Academy",
+                        "title": "TERMINALTOR",
                         "body": "Your friends are ahead. One round closes the gap.",
                         "days_inactive": round(days_inactive, 1),
                         "enqueued_at": current_time.isoformat(),
@@ -74,7 +74,7 @@ class ComebackService:
                     msg = {
                         "user_id": user_id,
                         "type": "comeback_day_3",
-                        "title": "The Tech Academy",
+                        "title": "TERMINALTOR",
                         "body": "Your streak is on the line. 1 challenge brings it back.",
                         "days_inactive": round(days_inactive, 1),
                         "enqueued_at": current_time.isoformat(),

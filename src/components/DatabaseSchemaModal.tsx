@@ -322,7 +322,7 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
               <div className="p-3 bg-sky-950/30 border border-sky-800/50 rounded-lg text-slate-300">
                 <div className="font-bold text-sky-400 mb-1">Zero-Friction Fallback Note:</div>
                 <p>
-                  The Tech Academy includes an intelligent client-side bridge that provides instant local state persistence even before your Supabase credentials are plugged in. Once configured, requests transparently synchronize to your cloud PostgreSQL instance!
+                  TERMINALTOR includes an intelligent client-side bridge that provides instant local state persistence even before your Supabase credentials are plugged in. Once configured, requests transparently synchronize to your cloud PostgreSQL instance!
                 </p>
               </div>
             </div>

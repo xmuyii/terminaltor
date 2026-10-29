@@ -1,11 +1,11 @@
 {
-  "name": "The Tech Academy",
-  "short_name": "TechAcademy",
+  "name": "TERMINALTOR",
+  "short_name": "Terminaltor",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0b0f19",
   "theme_color": "#6366f1",
-  "description": "Gamified Python WebAssembly LMS & Coding Sandbox",
+  "description": "TERMINALTOR: Final Python Cyber Arena & Mainframe Combat. Studio: IRETE LABS • Tech: Powered by Ose Engine",
   "icons": [
     {
       "src": "/icons/192.png",

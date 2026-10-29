@@ -17,6 +17,8 @@ import {
   X,
   Terminal,
   Target,
+  Skull,
+  Crown,
 } from 'lucide-react';
 import CodeEditor from '../../../components/CodeEditor';
 import TerminalConsole from '../../../components/TerminalConsole';
@@ -319,9 +321,21 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
             )}
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20 text-sky-400">
-                Level {currentQuest.level}
-              </span>
+              {currentQuest.is_boss ? (
+                <>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 flex items-center gap-1 animate-pulse">
+                    <Skull className="w-3.5 h-3.5 text-rose-400" />
+                    <span>FINAL BOSS</span>
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-600/50">
+                    CORE HP: 1,000
+                  </span>
+                </>
+              ) : (
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                  Level {currentQuest.level}
+                </span>
+              )}
 
               {currentQuest.is_pro && (
                 <span className="text-[10px] font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-600/60 tracking-wider">
@@ -332,7 +346,7 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
               {isCompleted && (
                 <span className="flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/80 font-medium">
                   <CheckCircle2 className="w-3 h-3" />
-                  <span className="hidden xs:inline">Completed</span>
+                  <span className="hidden xs:inline">{currentQuest.is_boss ? 'Defeated' : 'Completed'}</span>
                 </span>
               )}
             </div>
@@ -713,90 +727,185 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
 
       {/* Juicy Victory Modal Overlay */}
       {showVictoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
-          <div className="relative w-full max-w-md bg-gradient-to-b from-[#0f172a] to-[#090d16] border-2 border-amber-400/80 rounded-2xl shadow-[0_0_50px_rgba(251,191,36,0.3)] p-6 text-center space-y-5 overflow-hidden">
-            {/* Top Glow Ring */}
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-40 bg-amber-500/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
+          {currentQuest.is_boss ? (
+            <div className="relative w-full max-w-lg bg-gradient-to-b from-[#1c0817] via-[#100718] to-[#070b14] border-2 border-rose-500 rounded-3xl shadow-[0_0_60px_rgba(244,63,94,0.4)] p-6 sm:p-8 text-center space-y-5 overflow-hidden">
+              {/* Boss Glow Ring */}
+              <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-rose-500/25 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/40 text-3xl font-black animate-bounce">
-              🏆
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
-                Level Complete
-              </span>
-              <h3 className="text-2xl font-black text-slate-100 tracking-tight">
-                Challenge Conquered!
-              </h3>
-              <p className="text-xs text-slate-400">
-                All unit test assertions verified in Pyodide WebAssembly.
-              </p>
-            </div>
-
-            {/* Rewards Strip */}
-            <div className="grid grid-cols-3 gap-2 p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
-              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-                <span className="text-[10px] text-amber-300 font-semibold uppercase block">Earned XP</span>
-                <span className="text-lg font-black text-amber-400 font-mono">+{currentQuest.xp_reward} XP</span>
+              <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-rose-600 via-amber-500 to-yellow-300 text-slate-950 flex items-center justify-center shadow-xl shadow-rose-600/40 text-4xl font-black animate-bounce">
+                👑
               </div>
-              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
-                <span className="text-[10px] text-emerald-300 font-semibold uppercase block">Credits</span>
-                <span className="text-lg font-black text-emerald-400 font-mono">🪙 +30</span>
-              </div>
-              <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/30 text-center">
-                <span className="text-[10px] text-orange-300 font-semibold uppercase block">Streak</span>
-                <span className="text-lg font-black text-orange-400 font-mono">🔥 {profile.streak_days}d</span>
-              </div>
-            </div>
 
-            {/* Badge Unlocked */}
-            <div className="p-3 bg-slate-900 border border-emerald-500/30 rounded-xl flex items-center gap-3 text-left">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xl shrink-0">
-                🏅
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-mono font-black text-rose-300 bg-rose-950/90 border border-rose-500/60 px-3 py-1 rounded-full uppercase tracking-widest inline-block animate-pulse">
+                  🏆 GAME COMPLETED • 100% FINISHED
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  You Have Defeated The Terminaltor!
+                </h3>
+                <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                  The rogue mainframe overseer has been eradicated from the Ose Engine core. You have solved all logic challenges and finished <strong>TERMINALTOR</strong>!
+                </p>
               </div>
-              <div>
-                <div className="text-[11px] text-emerald-400 font-bold uppercase">Badge Unlocked</div>
-                <div className="text-sm font-bold text-slate-100">{currentQuest.badge_title}</div>
+
+              {/* Studio & Tech Certificate Badge */}
+              <div className="p-3.5 rounded-2xl bg-black/60 border border-rose-500/40 text-left space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-slate-400">Official Completion Certificate:</span>
+                  <span className="text-[10px] font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-600/40">VERIFIED</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] font-mono">
+                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
+                    <span className="text-slate-500 text-[9px] block">STUDIO</span>
+                    <strong className="text-slate-200">IRETE LABS</strong>
+                  </div>
+                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
+                    <span className="text-slate-500 text-[9px] block">PRODUCT</span>
+                    <strong className="text-emerald-400">TERMINALTOR</strong>
+                  </div>
+                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-center">
+                    <span className="text-slate-500 text-[9px] block">TECH</span>
+                    <strong className="text-teal-300">Ose Engine</strong>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowVictoryModal(false)}
-                className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-lg transition-colors"
-              >
-                Review Solution
-              </button>
+              {/* Rewards Strip */}
+              <div className="grid grid-cols-3 gap-2 p-3 bg-black/40 border border-slate-800 rounded-xl">
+                <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-center">
+                  <span className="text-[10px] text-rose-300 font-semibold uppercase block">Boss Bounty</span>
+                  <span className="text-lg font-black text-rose-400 font-mono">+{currentQuest.xp_reward} XP</span>
+                </div>
+                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
+                  <span className="text-[10px] text-amber-300 font-semibold uppercase block">Credits</span>
+                  <span className="text-lg font-black text-amber-400 font-mono">🪙 +100</span>
+                </div>
+                <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
+                  <span className="text-[10px] text-emerald-300 font-semibold uppercase block">Game Status</span>
+                  <span className="text-sm font-black text-emerald-400 font-mono">FINISHED</span>
+                </div>
+              </div>
 
-              {nextQuest ? (
+              {/* Badge Unlocked */}
+              <div className="p-3 bg-slate-900/90 border border-rose-500/40 rounded-xl flex items-center gap-3 text-left">
+                <div className="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-xl shrink-0">
+                  💀
+                </div>
+                <div>
+                  <div className="text-[11px] text-rose-400 font-bold uppercase">Apex Title Acquired</div>
+                  <div className="text-sm font-black text-white">{currentQuest.badge_title}</div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVictoryModal(false)}
+                  className="w-full sm:flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                >
+                  Review Final Solution
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     setShowVictoryModal(false);
                     if (onBackToQuests) onBackToQuests();
                   }}
-                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-lg shadow-lg shadow-amber-400/20 transition-all flex items-center justify-center gap-1.5"
+                  className="w-full sm:flex-1 py-3 px-4 bg-gradient-to-r from-rose-500 via-amber-500 to-yellow-400 hover:from-rose-400 hover:to-yellow-300 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-rose-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 >
-                  <span>Next Quest</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <span>Finish &amp; View Completion Map</span>
+                  <Crown className="w-4 h-4" />
                 </button>
-              ) : (
+              </div>
+            </div>
+          ) : (
+            <div className="relative w-full max-w-md bg-gradient-to-b from-[#0f172a] to-[#090d16] border-2 border-amber-400/80 rounded-2xl shadow-[0_0_50px_rgba(251,191,36,0.3)] p-6 text-center space-y-5 overflow-hidden">
+              {/* Top Glow Ring */}
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-40 bg-amber-500/20 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/40 text-3xl font-black animate-bounce">
+                🏆
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+                  Level Complete
+                </span>
+                <h3 className="text-2xl font-black text-slate-100 tracking-tight">
+                  Challenge Conquered!
+                </h3>
+                <p className="text-xs text-slate-400">
+                  All unit test assertions verified in Pyodide WebAssembly.
+                </p>
+              </div>
+
+              {/* Rewards Strip */}
+              <div className="grid grid-cols-3 gap-2 p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
+                  <span className="text-[10px] text-amber-300 font-semibold uppercase block">Earned XP</span>
+                  <span className="text-lg font-black text-amber-400 font-mono">+{currentQuest.xp_reward} XP</span>
+                </div>
+                <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
+                  <span className="text-[10px] text-emerald-300 font-semibold uppercase block">Credits</span>
+                  <span className="text-lg font-black text-emerald-400 font-mono">🪙 +30</span>
+                </div>
+                <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/30 text-center">
+                  <span className="text-[10px] text-orange-300 font-semibold uppercase block">Streak</span>
+                  <span className="text-lg font-black text-orange-400 font-mono">🔥 {profile.streak_days}d</span>
+                </div>
+              </div>
+
+              {/* Badge Unlocked */}
+              <div className="p-3 bg-slate-900 border border-emerald-500/30 rounded-xl flex items-center gap-3 text-left">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xl shrink-0">
+                  🏅
+                </div>
+                <div>
+                  <div className="text-[11px] text-emerald-400 font-bold uppercase">Badge Unlocked</div>
+                  <div className="text-sm font-bold text-slate-100">{currentQuest.badge_title}</div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowVictoryModal(false);
-                    if (onBackToQuests) onBackToQuests();
-                  }}
-                  className="flex-1 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-lg transition-all"
+                  onClick={() => setShowVictoryModal(false)}
+                  className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-lg transition-colors"
                 >
-                  Return to Quest Map
+                  Review Solution
                 </button>
-              )}
+
+                {nextQuest ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowVictoryModal(false);
+                      if (onBackToQuests) onBackToQuests();
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-lg shadow-lg shadow-amber-400/20 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <span>Next Quest</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowVictoryModal(false);
+                      if (onBackToQuests) onBackToQuests();
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-lg transition-all"
+                  >
+                    Return to Quest Map
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
