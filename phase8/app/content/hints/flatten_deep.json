@@ -1,0 +1,5 @@
+{
+  "1": "Arbitrarily deep lists require inspecting every item recursively.",
+  "2": "If an item is not a list, append it directly to results.",
+  "3": "If an item is a list, recurse on it and extend results with the flattened elements."
+}

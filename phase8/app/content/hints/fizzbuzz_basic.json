@@ -1,0 +1,5 @@
+{
+  "1": "Check divisibility by both three and five first.",
+  "2": "If divisible by fifteen return FizzBuzz, then check three for Fizz and five for Buzz.",
+  "3": "If none of those conditions match, convert the integer to a string and return it."
+}

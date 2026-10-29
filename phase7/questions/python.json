@@ -1,0 +1,104 @@
+[
+  {
+    "id": "py-01",
+    "text": "What happens when you use a mutable default argument like def fn(x=[]): x.append(1)?",
+    "options": [
+      "A new list is instantiated on every function call",
+      "The list is created once at definition and shared across calls",
+      "Python raises an UnboundLocalError at runtime",
+      "The list is cleared automatically when returning"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "py-02",
+    "text": "Which statement accurately describes Python's Global Interpreter Lock (GIL)?",
+    "options": [
+      "It prevents deadlocks across multiple OS processes",
+      "It allows threads to run in parallel on all CPU cores",
+      "It ensures only one thread executes Python bytecode at a time",
+      "It is automatically disabled when using the multiprocessing module"
+    ],
+    "correct_index": 2
+  },
+  {
+    "id": "py-03",
+    "text": "In a generator function, which keyword pauses execution and yields a value back to the caller?",
+    "options": ["pause", "yield", "defer", "emit"],
+    "correct_index": 1
+  },
+  {
+    "id": "py-04",
+    "text": "What is the time complexity of looking up a key in a standard Python dictionary under normal conditions?",
+    "options": ["O(log n)", "O(n)", "O(1)", "O(n log n)"],
+    "correct_index": 2
+  },
+  {
+    "id": "py-05",
+    "text": "What does the @property decorator provide when applied to a class method?",
+    "options": [
+      "Transforms the method into a static class variable",
+      "Allows the method to be accessed like an attribute getter",
+      "Makes the method private and inaccessible from outside",
+      "Caches the return value of the method permanently"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "py-06",
+    "text": "Which exception is raised when calling next() on an exhausted iterator?",
+    "options": ["StopIteration", "IndexError", "IteratorEndError", "ValueError"],
+    "correct_index": 0
+  },
+  {
+    "id": "py-07",
+    "text": "What is the output of print(type((1))) in Python 3?",
+    "options": ["<class 'tuple'>", "<class 'int'>", "<class 'list'>", "<class 'singleton'>"],
+    "correct_index": 1
+  },
+  {
+    "id": "py-08",
+    "text": "What does the __slots__ declaration inside a Python class definition achieve?",
+    "options": [
+      "Prevents the creation of __dict__ per instance, optimizing memory",
+      "Enforces strong static type checking on all class attributes",
+      "Restricts the class from being inherited by subclasses",
+      "Makes all instances thread-safe by applying automatic mutexes"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "py-09",
+    "text": "Which method must a class implement to support the context manager 'with' statement entry?",
+    "options": ["__open__", "__enter__", "__start__", "__init__"],
+    "correct_index": 1
+  },
+  {
+    "id": "py-10",
+    "text": "What is the purpose of the 'is' operator in Python?",
+    "options": [
+      "Tests if two variables have equivalent values",
+      "Tests if two variables refer to the exact same object in memory",
+      "Casts the left operand to the type of the right operand",
+      "Checks whether an object implements a specific interface"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "py-11",
+    "text": "How does Python resolve method calls in multiple inheritance?",
+    "options": [
+      "Breadth-First Search (BFS)",
+      "Depth-First Search without cycle checks",
+      "C3 Linearization (Method Resolution Order / MRO)",
+      "Random selection among base classes"
+    ],
+    "correct_index": 2
+  },
+  {
+    "id": "py-12",
+    "text": "What is returned by bool([]) in Python?",
+    "options": ["True", "False", "None", "Raises TypeError"],
+    "correct_index": 1
+  }
+]

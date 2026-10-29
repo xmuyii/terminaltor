@@ -1,0 +1,5 @@
+{
+  "1": "Check the mathematical addition operator in Python.",
+  "2": "Your function should take parameters a and b and add them together.",
+  "3": "Return the expression adding a and b directly without reassigning variables."
+}

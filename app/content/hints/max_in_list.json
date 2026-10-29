@@ -1,0 +1,5 @@
+{
+  "1": "What happens if the list contains only negative numbers?",
+  "2": "Initialize your tracking variable with the first element of the list rather than zero.",
+  "3": "Loop through each item and update current maximum whenever a larger element is found."
+}

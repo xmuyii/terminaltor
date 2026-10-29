@@ -1,0 +1,5 @@
+{
+  "1": "Compare the two input numbers using a relational comparison operator.",
+  "2": "If the first number is strictly greater than the second, return it.",
+  "3": "In all other cases, including when both numbers are equal, return the second number."
+}

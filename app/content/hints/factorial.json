@@ -1,0 +1,5 @@
+{
+  "1": "What is the base value of zero factorial and one factorial?",
+  "2": "Multiply all integers from one up to n consecutively.",
+  "3": "Initialize your result to one, multiply by each integer in range one to n plus one, and return it."
+}

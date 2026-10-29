@@ -1,0 +1,5 @@
+{
+  "1": "Moving n disks requires moving n minus one disks, then the largest disk, then n minus one disks again.",
+  "2": "Notice the recurrence relation: moves for n equals two times moves for n minus one plus one.",
+  "3": "Return one if n is one, otherwise return two multiplied by recursive call for n minus one plus one."
+}

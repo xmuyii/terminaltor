@@ -1,0 +1,5 @@
+{
+  "1": "Use a hash map to store visited numbers and their index positions for linear time lookup.",
+  "2": "For each number, check if target minus current number is already in the map.",
+  "3": "Return the pair of indices when the complement is found in the dictionary."
+}

@@ -1,0 +1,119 @@
+[
+  {
+    "id": "js-01",
+    "text": "What is the evaluated output of typeof NaN in JavaScript?",
+    "options": ["'undefined'", "'nan'", "'number'", "'object'"],
+    "correct_index": 2
+  },
+  {
+    "id": "js-02",
+    "text": "What is the key functional difference between Promise.all() and Promise.allSettled()?",
+    "options": [
+      "Promise.all settles all promises, while allSettled rejects on the first error",
+      "Promise.all short-circuits on the first rejection; allSettled waits for all outcomes",
+      "Promise.all works only with synchronous functions",
+      "There is no difference; they are aliases"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "js-03",
+    "text": "Where do microtasks (such as Promise callbacks) execute relative to macrotasks in the Event Loop?",
+    "options": [
+      "After the current macrotask finishes and before the next macrotask begins",
+      "Always on a dedicated background OS worker thread",
+      "Only after rendering finishes and the browser becomes idle",
+      "Simultaneously using hardware WebAssembly acceleration"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "js-04",
+    "text": "What is the result of [] == ![] in JavaScript?",
+    "options": ["false", "true", "TypeError", "undefined"],
+    "correct_index": 1
+  },
+  {
+    "id": "js-05",
+    "text": "How does an arrow function handle the 'this' keyword compared to a standard function?",
+    "options": [
+      "It binds 'this' dynamically to the calling object",
+      "It captures 'this' lexically from its enclosing scope",
+      "It sets 'this' strictly to undefined in all contexts",
+      "It binds 'this' to the global window/globalThis object always"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "js-06",
+    "text": "What is the primary feature of a WeakMap in JavaScript?",
+    "options": [
+      "Keys must be objects or non-registered symbols and are held weakly for garbage collection",
+      "Values cannot be updated once inserted",
+      "It can be iterated over using for..of loops in reverse order",
+      "It limits storage capacity to exactly 256 entries"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "js-07",
+    "text": "What does Object.freeze() do to a JavaScript object?",
+    "options": [
+      "Prevents adding new properties and modifying existing property values (shallow)",
+      "Recursively locks all nested objects in memory",
+      "Makes the object invisible to JSON.stringify()",
+      "Converts the object into an immutable WebAssembly memory buffer"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "js-08",
+    "text": "Which phase comes first in JavaScript DOM event dispatching?",
+    "options": ["Bubbling Phase", "Target Phase", "Capturing Phase", "Settling Phase"],
+    "correct_index": 2
+  },
+  {
+    "id": "js-09",
+    "text": "What does the Nullish Coalescing operator (??) check for, unlike the logical OR (||)?",
+    "options": [
+      "It checks specifically for null or undefined, not general falsy values like 0 or ''",
+      "It checks whether both operands are strictly equal",
+      "It checks if an array has zero length",
+      "It converts strings into boolean numbers"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "js-10",
+    "text": "What does the 'use strict' directive enforce in JavaScript?",
+    "options": [
+      "Prohibits undeclared global variables and prevents duplicate parameter names",
+      "Compiles JavaScript code directly to machine assembly",
+      "Enforces static TypeScript type definitions at runtime",
+      "Forces all asynchronous promises to run synchronously"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "js-11",
+    "text": "What is the return value of Array.prototype.splice()?",
+    "options": [
+      "An array containing the deleted elements",
+      "The newly modified array",
+      "The length of the modified array",
+      "A boolean indicating whether items were deleted"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "js-12",
+    "text": "What happens if you throw an error inside a JavaScript generator function?",
+    "options": [
+      "The generator closes and propagates the exception to the caller unless handled",
+      "The generator restarts from line 1",
+      "The generator skips to the next yield statement automatically",
+      "The event loop terminates completely"
+    ],
+    "correct_index": 0
+  }
+]

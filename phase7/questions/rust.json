@@ -1,0 +1,124 @@
+[
+  {
+    "id": "rs-01",
+    "text": "What does the Rust Borrow Checker enforce regarding references to data?",
+    "options": [
+      "Any number of mutable references as long as they are wrapped in an Option",
+      "Either one mutable reference OR any number of immutable references at a time",
+      "Only immutable references are permitted in multi-threaded contexts",
+      "References are garbage collected whenever CPU utilization drops below 50%"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "rs-02",
+    "text": "What is the difference between Rc<T> and Arc<T> in Rust?",
+    "options": [
+      "Arc uses atomic operations for reference counting, making it safe across threads",
+      "Rc can mutate data without RefCell, while Arc cannot",
+      "Arc is allocated on the stack, while Rc is always heap-allocated",
+      "Rc is strictly for asynchronous code, while Arc is for synchronous code"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "rs-03",
+    "text": "What happens when a panic! occurs in Rust by default?",
+    "options": [
+      "The program immediately terminates with code 0",
+      "The thread unwinds its stack, running destructors/Drop for its resources",
+      "The operating system restarts the parent process",
+      "Rust prompts the user in the terminal to retry the failed operation"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "rs-04",
+    "text": "Which trait in Rust allows a type to be duplicated via a bitwise memory copy without explicit logic?",
+    "options": ["Clone", "Copy", "Duplicate", "Mirror"],
+    "correct_index": 1
+  },
+  {
+    "id": "rs-05",
+    "text": "What is the memory size of the Option<Box<T>> type in Rust on a 64-bit architecture?",
+    "options": [
+      "8 bytes (due to null pointer optimization)",
+      "16 bytes (8 bytes for pointer plus 8 bytes for tag)",
+      "24 bytes",
+      "Variable depending on the size of T"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "rs-06",
+    "text": "What is interior mutability in Rust, and which type is a common single-threaded example?",
+    "options": [
+      "Mutating data behind an immutable reference, typically via RefCell<T>",
+      "Allowing multiple threads to write to the same stack variable without locks",
+      "Disabling the borrow checker within an unsafe {} block entirely",
+      "Mutating global static variables during compilation"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "rs-07",
+    "text": "What does the ? operator do when applied to a Result<T, E> expression?",
+    "options": [
+      "Logs an error to stderr if the result is Err",
+      "Unwraps Ok(T) or immediately returns Err(From::from(e)) from the enclosing function",
+      "Suppresses any panic and replaces the value with a default struct",
+      "Spawns an async future to retry the operation up to 3 times"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "rs-08",
+    "text": "Which trait must a type implement to indicate that ownership can be safely transferred across threads?",
+    "options": ["Sync", "Send", "Clone", "Move"],
+    "correct_index": 1
+  },
+  {
+    "id": "rs-09",
+    "text": "What does Pin<P> ensure when working with self-referential async Futures?",
+    "options": [
+      "The pointee will never be moved in memory before it is dropped",
+      "The future runs with elevated real-time OS priority",
+      "The pointer will never be deallocated under any circumstance",
+      "The data is pinned to a specific hardware CPU core affinity"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "rs-10",
+    "text": "What is the difference between str and String in Rust?",
+    "options": [
+      "str is a dynamically allocated heap string; String is an immutable slice",
+      "String is an owned, growable heap buffer; &str is a borrowed string slice",
+      "str uses ASCII encoding; String uses UTF-32 encoding",
+      "There is no difference; str is just an alias for String"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "rs-11",
+    "text": "What is the primary role of the PhantomData<T> marker in Rust?",
+    "options": [
+      "Tells the compiler that a struct acts as if it owns or references T for variance/drop checks",
+      "Allocates zero-initialized memory for future runtime expansion",
+      "Hides confidential fields from debugger stack traces",
+      "Generates mock data for unit tests automatically"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "rs-12",
+    "text": "What does the #[inline] attribute in Rust suggest to the compiler?",
+    "options": [
+      "The function must be inlined into the caller or compilation will fail",
+      "It makes the function eligible for inlining across crate boundaries",
+      "It converts the function into an immediate macro",
+      "It strips debugging symbols from the function binary"
+    ],
+    "correct_index": 1
+  }
+]

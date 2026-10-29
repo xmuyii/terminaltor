@@ -1,0 +1,5 @@
+{
+  "1": "Exponentiation represents repeated multiplication of the base.",
+  "2": "Multiply the base by itself exponent number of times.",
+  "3": "Handle zero exponent by returning one, and loop exponent times multiplying an accumulator."
+}

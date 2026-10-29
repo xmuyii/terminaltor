@@ -1,0 +1,5 @@
+{
+  "1": "Count total votes cast for each candidate.",
+  "2": "Ignore invalid or blank votes if specified in the challenge description.",
+  "3": "Return dictionary of candidate names to integer vote totals."
+}

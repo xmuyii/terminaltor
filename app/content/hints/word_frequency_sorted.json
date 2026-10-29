@@ -1,0 +1,5 @@
+{
+  "1": "Normalize text by lowercasing and splitting into words.",
+  "2": "Count word occurrences in a dictionary.",
+  "3": "Sort entries descending by frequency count, then alphabetically for ties."
+}

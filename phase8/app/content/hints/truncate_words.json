@@ -1,0 +1,5 @@
+{
+  "1": "Split the input string into individual words by whitespace.",
+  "2": "If word count is less than or equal to the limit, return the original string.",
+  "3": "Join the first limit words with spaces and append an ellipsis at the end."
+}

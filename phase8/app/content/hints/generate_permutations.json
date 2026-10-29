@@ -1,0 +1,5 @@
+{
+  "1": "Base case: a string of length one has only one permutation.",
+  "2": "For each character in the string, prepend it to recursive permutations of the remaining characters.",
+  "3": "Collect all generated permutations and return the complete list."
+}

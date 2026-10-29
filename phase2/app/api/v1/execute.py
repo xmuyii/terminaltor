@@ -1,0 +1,150 @@
+import logging
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from phase1.app.api.deps import get_current_user
+from phase1.app.config import Settings, get_settings
+from phase1.app.services.evaluator import evaluate_logic
+from phase1.app.services.executor import run_python
+from phase2.app.database import (
+    count_user_solves,
+    get_challenge_by_id,
+    has_first_passed,
+    record_submission_transaction,
+)
+from phase2.app.models.schemas import (
+    ExecuteRequest,
+    ExecutionResultPayload,
+    ProfileProgressSummary,
+    SubmissionResponse,
+    TestCaseResult,
+    UserProfile,
+)
+from phase2.app.services.badges import evaluate_badges
+from phase2.app.services.xp import compute_xp
+
+logger = logging.getLogger("gamification.execute")
+router = APIRouter(prefix="/execute", tags=["execute"])
+
+
+@router.post("", response_model=SubmissionResponse)
+async def execute_code(
+    payload: ExecuteRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+):
+    """Phase 2 Execution Pipeline: runs sandbox, evaluates AST, records first pass, awards XP, updates streak, unlocks badges."""
+    user_code = payload.code
+    code_bytes = user_code.encode("utf-8")
+
+    if len(code_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Code cannot be empty.",
+        )
+
+    if len(code_bytes) > settings.MAX_CODE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Code payload exceeds maximum size of {settings.MAX_CODE_SIZE_BYTES} bytes.",
+        )
+
+    challenge = await get_challenge_by_id(payload.challenge_id)
+    if not challenge:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Challenge with ID '{payload.challenge_id}' not found.",
+        )
+
+    test_spec = challenge["test_spec"]
+    eval_spec = challenge.get("evaluation_spec", {})
+    challenge_xp = challenge.get("xp_reward", 10)
+
+    # 1. AST static evaluation
+    ast_ok, logic_notes = evaluate_logic(user_code, eval_spec)
+
+    # 2. Subprocess execution
+    exec_res = await run_python(
+        user_code=user_code,
+        test_spec=test_spec,
+        timeout_seconds=settings.EXECUTION_TIMEOUT_SECONDS,
+        max_code_size_bytes=settings.MAX_CODE_SIZE_BYTES,
+    )
+
+    fatal_err = exec_res.get("fatal")
+    raw_results = exec_res.get("results", [])
+    exec_ms = exec_res.get("execution_ms", 0)
+    stdout = exec_res.get("stdout", "")
+    stderr = exec_res.get("stderr", "")
+
+    test_case_results = []
+    for r in raw_results:
+        test_case_results.append(
+            TestCaseResult(
+                index=r["index"],
+                passed=r["passed"],
+                input=r["input"],
+                expected=r["expected"],
+                actual=r.get("actual"),
+                error=r.get("error"),
+                duration_ms=r.get("duration_ms", 0),
+            )
+        )
+
+    passed_tests = sum(1 for t in test_case_results if t.passed)
+    total_tests = len(test_spec)
+    all_tests_passed = (total_tests > 0) and (passed_tests == total_tests)
+    overall_passed = all_tests_passed and ast_ok and (fatal_err is None)
+
+    if fatal_err:
+        stderr = (stderr + f"\n{fatal_err}").strip()
+
+    # 3 & 4. Determine first pass and calculate XP
+    already_passed = await has_first_passed(current_user.id, payload.challenge_id)
+    xp_to_award = 0
+
+    if overall_passed and not already_passed:
+        xp_to_award = compute_xp(challenge_xp, total_tests, passed_tests)
+
+    # 5 & 6. Transaction: record submission, update XP and streak (with DB-level idempotency)
+    submission_id, is_first_pass, awarded_xp, updated_profile = await record_submission_transaction(
+        user_id=current_user.id,
+        challenge_id=payload.challenge_id,
+        code=user_code,
+        passed=overall_passed,
+        execution_ms=exec_ms,
+        stdout=stdout,
+        stderr=stderr,
+        results=[t.model_dump() for t in test_case_results],
+        xp_to_award=xp_to_award,
+    )
+
+    # 7. Evaluate and unlock badges
+    solves_count = await count_user_solves(current_user.id)
+    new_badges = await evaluate_badges(
+        user_id=current_user.id,
+        total_xp=updated_profile.get("total_xp", 0),
+        current_streak=updated_profile.get("current_streak", 0),
+        solves_count=solves_count,
+    )
+
+    return SubmissionResponse(
+        submission_id=submission_id,
+        passed=overall_passed,
+        result=ExecutionResultPayload(
+            passed=overall_passed,
+            total_tests=total_tests,
+            passed_tests=passed_tests,
+            execution_ms=exec_ms,
+            stdout=stdout,
+            stderr=stderr,
+            logic_notes=logic_notes,
+            results=test_case_results,
+        ),
+        xp_awarded=awarded_xp,
+        new_badges=new_badges,
+        profile=ProfileProgressSummary(
+            total_xp=updated_profile.get("total_xp", 0),
+            current_streak=updated_profile.get("current_streak", 0),
+            longest_streak=updated_profile.get("longest_streak", 0),
+        ),
+    )

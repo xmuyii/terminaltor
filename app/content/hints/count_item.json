@@ -1,0 +1,5 @@
+{
+  "1": "Set up a tally counter set to zero.",
+  "2": "Loop through every element and compare it for equality with the target.",
+  "3": "Increment the counter on every match and return the final tally."
+}

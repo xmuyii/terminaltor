@@ -1,0 +1,5 @@
+{
+  "1": "Consider accumulating numbers starting from one up to and including n.",
+  "2": "Initialize an accumulator variable at zero before iterating.",
+  "3": "Use range from one to n plus one and return the accumulated sum."
+}

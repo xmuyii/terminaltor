@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # Redis Cache Service for Multi-Timeframe Leaderboards
+  redis:
+    image: redis:7-alpine
+    container_name: sovereign_lms_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # PostgreSQL Database (Supabase compatible)
+  postgres:
+    image: postgres:15-alpine
+    container_name: sovereign_lms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sovereign_lms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # FastAPI Backend Application
+  api:
+    build:
+      context: ..
+      dockerfile: phase4/Dockerfile
+    container_name: sovereign_lms_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - LEADERBOARD_CACHE_TTL_DAILY=60
+      - LEADERBOARD_CACHE_TTL_WEEKLY=300
+      - LEADERBOARD_CACHE_TTL_MONTHLY=900
+      - LEADERBOARD_CACHE_TTL_ALL_TIME=3600
+      - LEADERBOARD_PAGE_SIZE_DEFAULT=25
+      - LEADERBOARD_PAGE_SIZE_MAX=100
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/sovereign_lms
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+volumes:
+  redis_data:
+  pg_data:

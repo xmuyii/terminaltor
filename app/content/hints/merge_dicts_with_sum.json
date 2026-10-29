@@ -1,0 +1,5 @@
+{
+  "1": "Combine keys from both input dictionaries into a single result dictionary.",
+  "2": "For keys present in both dictionaries, sum their numeric values.",
+  "3": "For keys in only one dictionary, copy their value as is into the combined dictionary."
+}

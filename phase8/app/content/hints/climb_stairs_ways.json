@@ -1,0 +1,5 @@
+{
+  "1": "To reach step n, you can take one step from n minus one or two steps from n minus two.",
+  "2": "Base cases: one way for step one, two ways for step two.",
+  "3": "Use memoization or dynamic programming recurrence ways n minus one plus ways n minus two."
+}

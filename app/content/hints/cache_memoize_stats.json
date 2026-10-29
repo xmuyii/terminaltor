@@ -1,0 +1,5 @@
+{
+  "1": "Track calls to a simulated cache, distinguishing cache hits from cache misses.",
+  "2": "Check if argument key exists in cache: increment hit count if present, miss count if absent.",
+  "3": "Store computed values in cache on misses and return statistics dictionary."
+}

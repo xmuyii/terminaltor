@@ -1,0 +1,5 @@
+{
+  "1": "You are computing differences between each element and its immediate successor.",
+  "2": "Loop from index zero up to the length minus one.",
+  "3": "Append the difference of item at index i plus one minus item at index i."
+}

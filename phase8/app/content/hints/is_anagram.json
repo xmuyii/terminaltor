@@ -1,0 +1,5 @@
+{
+  "1": "Anagrams have identical character counts regardless of letter ordering.",
+  "2": "Normalize both strings by removing whitespace, punctuation, and converting to lowercase.",
+  "3": "Compare sorted characters or character frequency dictionaries of both cleaned strings."
+}

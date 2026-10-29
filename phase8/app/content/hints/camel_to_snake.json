@@ -1,0 +1,5 @@
+{
+  "1": "Look for uppercase characters in the string that mark word boundaries.",
+  "2": "Before uppercase letters, insert an underscore unless it is the very first character.",
+  "3": "Convert the entire resulting string to lowercase before returning."
+}

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Profile — Sovereign Academy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="brand">
+        <a href="index.html" class="nav-brand-link">
+          <span class="brand-icon">⚡</span>
+          <h1>Sovereign Academy</h1>
+        </a>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Challenges</a>
+        <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+        <a href="profile.html" class="nav-link active">Profile</a>
+      </nav>
+    </header>
+
+    <main class="profile-container">
+      <!-- Profile Header Summary Card -->
+      <section class="profile-hero-card">
+        <div class="profile-avatar-block">
+          <div class="profile-avatar">👨‍💻</div>
+          <div>
+            <h2 id="profileUsername">kid_coder</h2>
+            <div class="profile-meta">Student Cadet · Active Learner</div>
+          </div>
+        </div>
+
+        <div class="profile-stats-strip">
+          <div class="stat-card">
+            <span class="stat-label">Total Experience</span>
+            <div class="stat-value text-gold" id="profileXp">0 XP</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Current Streak</span>
+            <div class="stat-value text-orange" id="profileStreak">🔥 0 Days</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Challenges Solved</span>
+            <div class="stat-value text-emerald" id="profileSolves">0 / 20</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Badges Showcase Grid -->
+      <section class="badges-section">
+        <div class="section-header">
+          <h3>Earned Badges &amp; Achievements</h3>
+          <span class="badge-count" id="badgeCountText">0 / 10 Unlocked</span>
+        </div>
+        <div class="badges-grid" id="badgesGrid">
+          <div class="loading-spinner">Loading badges...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const ALL_BADGES = [
+      { id: "first_steps", name: "First Steps", desc: "Solve your first challenge", icon: "🌱" },
+      { id: "getting_going", name: "Getting Going", desc: "Solve 5 challenges", icon: "🚀" },
+      { id: "problem_solver", name: "Problem Solver", desc: "Solve 15 challenges", icon: "🧠" },
+      { id: "century", name: "Century", desc: "Earn 100 XP", icon: "💯" },
+      { id: "five_hundred", name: "High Five", desc: "Earn 500 XP", icon: "✋" },
+      { id: "two_thousand", name: "Scholar", desc: "Earn 2,000 XP", icon: "🎓" },
+      { id: "ten_thousand", name: "Master", desc: "Earn 10,000 XP", icon: "👑" },
+      { id: "three_day", name: "On a Roll", desc: "Maintain a 3-day streak", icon: "🔥" },
+      { id: "seven_day", name: "Week Warrior", desc: "Maintain a 7-day streak", icon: "⚡" },
+      { id: "thirty_day", name: "Unstoppable", desc: "Maintain a 30-day streak", icon: "🌟" }
+    ];
+
+    async function loadProfile() {
+      const token = localStorage.getItem("sovereign_auth_token") || "demo_token";
+      try {
+        const res = await fetch("/api/v1/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to load profile");
+        const data = await res.json();
+
+        document.getElementById("profileUsername").textContent = data.username;
+        document.getElementById("profileXp").textContent = `${data.total_xp} XP`;
+        document.getElementById("profileStreak").textContent = `🔥 ${data.current_streak} Days`;
+        document.getElementById("profileSolves").textContent = `${data.solved_count} / 20`;
+
+        const unlockedSet = new Set((data.badges || []).map(b => b.id));
+        document.getElementById("badgeCountText").textContent = `${unlockedSet.size} / 10 Unlocked`;
+
+        const grid = document.getElementById("badgesGrid");
+        grid.innerHTML = "";
+
+        ALL_BADGES.forEach(b => {
+          const isUnlocked = unlockedSet.has(b.id);
+          const card = document.createElement("div");
+          card.className = `badge-card ${isUnlocked ? "unlocked" : "locked"}`;
+          card.innerHTML = `
+            <div class="badge-icon-box">${isUnlocked ? b.icon : "🔒"}</div>
+            <div class="badge-title">${b.name}</div>
+            <div class="badge-desc">${b.desc}</div>
+            <div class="badge-tag">${isUnlocked ? "UNLOCKED" : "LOCKED"}</div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

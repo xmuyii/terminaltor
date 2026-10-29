@@ -1,0 +1,5 @@
+{
+  "1": "Consider stepping through the list in increments equal to the chunk size.",
+  "2": "Use range starting at zero with a step of size to grab consecutive slices.",
+  "3": "Append list from index i to i plus size into your results and return the list of chunks."
+}

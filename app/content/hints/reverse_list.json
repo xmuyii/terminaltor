@@ -1,0 +1,5 @@
+{
+  "1": "Think about stepping backwards through the collection.",
+  "2": "You can construct a new list by prepending items or using reverse slice indexing.",
+  "3": "Return items traversed with a step of negative one."
+}
