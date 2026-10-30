@@ -19,6 +19,7 @@ import { CyberBaseStoreModal } from '../components/CyberBaseStoreModal';
 import { SadisticGameMasterModal } from '../components/SadisticGameMasterModal';
 import { ArcadeCreditArt, CryptoTokenArt } from '../components/CurrencyArt';
 import { gameMasterGiftService, GiftStatus } from '../lib/gameMasterGiftService';
+import { SquadChatter } from '../components/SquadChatter';
 
 interface ArcadePageProps {
   currentProfile: Profile;
@@ -463,6 +464,14 @@ export const ArcadePage: React.FC<ArcadePageProps> = ({ currentProfile, onBackTo
               </button>
             </div>
           </div>
+
+          {/* Live Squad Chatter & Terminaltor Raid Status (from Ose Engine PWA) */}
+          <SquadChatter
+            currentUsername={playerName}
+            roomCode={selectedMode === 'debugshunting' ? `ARENA-DEBUG-${roomGenerationIndex}` : `ARENA-FORGE-${roomGenerationIndex}`}
+            inRoom={false}
+            selectedMode={selectedMode}
+          />
 
           {/* Active Room Allocation Banner */}
           <div className={`bg-white border rounded-2xl p-6 shadow-sm space-y-4 transition-colors ${

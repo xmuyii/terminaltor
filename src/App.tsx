@@ -3,7 +3,7 @@ import Navigation, { AppView } from './components/Navigation';
 import LandingHero from './components/LandingHero';
 import HomeTabBar from './components/HomeTabBar';
 import QuestMap from './components/QuestMap';
-import WorkspacePage from './app/workspace/[questId]/page';
+import WorkspacePage from './pages/WorkspacePage';
 import InstructorConsole from './components/InstructorConsole';
 import PassModal from './components/PassModal';
 import LeaderboardModal from './components/LeaderboardModal';
@@ -316,6 +316,7 @@ export default function App() {
           <div className="space-y-6">
             <LandingHero
               onEnterQuestLine={() => setCurrentView('quests')}
+              onOpenSandbox={() => setCurrentView('workspace')}
               onOpenPassModal={() => setIsPassModalOpen(true)}
             />
             {/* Homepage Tabs: Multiplayer Arcade, Academy Alliances, Classroom */}

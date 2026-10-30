@@ -1,2 +1,2 @@
-export * from '../../../src/app/workspace/[questId]/page';
-export { default } from '../../../src/app/workspace/[questId]/page';
+export * from '../../src/pages/WorkspacePage';
+export { default } from '../../src/pages/WorkspacePage';

@@ -1,13 +1,15 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Gamepad2, Compass, Trophy, Flame, Zap, Shield, Target } from 'lucide-react';
+import { Sparkles, ArrowRight, Gamepad2, Compass, Trophy, Flame, Zap, Shield, Target, Terminal } from 'lucide-react';
 
 interface LandingHeroProps {
   onEnterQuestLine: () => void;
+  onOpenSandbox?: () => void;
   onOpenPassModal: () => void;
 }
 
 export const LandingHero: React.FC<LandingHeroProps> = ({
   onEnterQuestLine,
+  onOpenSandbox,
   onOpenPassModal,
 }) => {
   return (
@@ -45,16 +47,27 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
               <button
                 type="button"
                 onClick={onEnterQuestLine}
-                className="flex items-center gap-2 px-7 py-3.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition-all"
+                className="flex items-center gap-2 px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition-all cursor-pointer"
               >
                 <span>Launch Quest Line</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
+              {onOpenSandbox && (
+                <button
+                  type="button"
+                  onClick={onOpenSandbox}
+                  className="flex items-center gap-2 px-6 py-3.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-100 border border-emerald-500/30 hover:border-emerald-500/60 font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer font-mono"
+                >
+                  <Terminal className="w-4 h-4 text-emerald-400" />
+                  <span>Code Sandbox</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={onOpenPassModal}
-                className="flex items-center gap-2 px-7 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-bold text-sm rounded-xl shadow-md transition-all active:scale-95"
+                className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold text-sm rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span>Creator Pass</span>

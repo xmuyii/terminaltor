@@ -13,6 +13,7 @@ import {
   Send,
   Gamepad2,
   Compass,
+  Terminal,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 import { SupabaseStore, SyncStatus } from '../lib/supabase';
@@ -135,12 +136,21 @@ export const Navigation: React.FC<NavigationProps> = ({
             type="button"
             onClick={() => onNavigate('quests')}
             className={`hover:text-slate-100 transition-colors whitespace-nowrap shrink-0 ${
-              currentView === 'quests' || currentView === 'workspace'
-                ? 'text-emerald-400 font-bold'
-                : ''
+              currentView === 'quests' ? 'text-emerald-400 font-bold' : ''
             }`}
           >
             Quest Line
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('workspace')}
+            className={`hover:text-slate-100 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+              currentView === 'workspace' ? 'text-emerald-400 font-bold' : ''
+            }`}
+          >
+            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Code Sandbox</span>
           </button>
 
           <button
@@ -306,13 +316,26 @@ export const Navigation: React.FC<NavigationProps> = ({
             type="button"
             onClick={() => handleMobileNav('quests')}
             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all text-left ${
-              currentView === 'quests' || currentView === 'workspace'
+              currentView === 'quests'
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
                 : 'text-slate-300 hover:bg-slate-900 hover:text-white'
             }`}
           >
             <Compass className="w-4 h-4 text-emerald-400" />
             <span>Quest Line</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleMobileNav('workspace')}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all text-left ${
+              currentView === 'workspace'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+            }`}
+          >
+            <Terminal className="w-4 h-4 text-emerald-400" />
+            <span>Code Sandbox</span>
           </button>
 
           <button

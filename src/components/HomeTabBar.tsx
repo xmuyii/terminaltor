@@ -12,6 +12,7 @@ import {
   Target,
   Trophy,
   Compass,
+  Terminal,
 } from 'lucide-react';
 import { AppView } from './Navigation';
 import { Profile } from '../types';
@@ -386,7 +387,7 @@ export const HomeTabBar: React.FC<HomeTabBarProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('quests')}
-                  className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition-all active:scale-95"
+                  className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer"
                 >
                   <Compass className="w-4 h-4" />
                   <span>Open Quest Line</span>
@@ -395,11 +396,20 @@ export const HomeTabBar: React.FC<HomeTabBarProps> = ({
 
                 <button
                   type="button"
+                  onClick={() => onNavigate('workspace')}
+                  className="flex items-center gap-2 px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold rounded-xl transition-all border border-emerald-500/30 font-mono cursor-pointer"
+                >
+                  <Terminal className="w-4 h-4 text-emerald-400" />
+                  <span>Launch Code Sandbox</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={onOpenDailyQuestsModal}
-                  className="flex items-center gap-2 px-5 py-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-sm font-bold rounded-xl transition-all border border-slate-700"
+                  className="flex items-center gap-2 px-5 py-3 bg-slate-900 hover:bg-slate-800 text-emerald-400 text-sm font-bold rounded-xl transition-all border border-slate-800 cursor-pointer"
                 >
                   <Target className="w-4 h-4" />
-                  <span>View Daily Rotating Quests</span>
+                  <span>Daily Quests</span>
                 </button>
               </div>
             </div>
