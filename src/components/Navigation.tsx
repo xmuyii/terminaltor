@@ -96,9 +96,13 @@ export const Navigation: React.FC<NavigationProps> = ({
             onClick={() => handleMobileNav('sandbox')}
             className="text-left flex items-center gap-2.5 group cursor-pointer"
           >
-            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-sm font-black shadow-xs group-hover:border-emerald-400 group-hover:scale-105 transition-all">
-              💀
-            </span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden ring-1 ring-emerald-500/50 bg-black/60 shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <img
+                src="/assets/irete_labs_logo.jpg"
+                alt="IRETE LABS Emblem"
+                className="w-full h-full object-cover"
+              />
+            </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span className="text-base sm:text-lg font-black tracking-wider text-slate-100 group-hover:text-emerald-400 transition-colors">

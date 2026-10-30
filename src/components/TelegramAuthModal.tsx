@@ -16,7 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
-import { telegramAuth, TelegramUserData } from '../lib/telegramAuth';
+import { telegramAuth, TelegramUserData, getTelegramBotUsername } from '../lib/telegramAuth';
 
 interface TelegramAuthModalProps {
   isOpen: boolean;
@@ -278,13 +278,13 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
               {/* Telegram Bot Direct Open Button */}
               <div className="pt-2 flex items-center justify-between border-t border-slate-800">
                 <a
-                  href="https://t.me"
+                  href={`https://t.me/${getTelegramBotUsername()}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 font-semibold"
                 >
                   <Send className="w-3.5 h-3.5 -rotate-12" />
-                  <span>Launch in Telegram WebApp</span>
+                  <span>Launch @{getTelegramBotUsername()} WebApp</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
 

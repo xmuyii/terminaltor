@@ -7,9 +7,12 @@ import {
   Bot,
   Send,
   ChevronRight,
-  MessageSquare
+  MessageSquare,
+  Skull,
+  Crown
 } from 'lucide-react';
 import { SADISTIC_QUESTS } from '../lib/gameMasterService';
+import { SupabaseStore } from '../lib/supabase';
 
 interface SadisticGameMasterModalProps {
   isOpen: boolean;
@@ -34,6 +37,10 @@ export const SadisticGameMasterModal: React.FC<SadisticGameMasterModalProps> = (
   selectedMode,
   currentUsername = 'Cadet',
 }) => {
+  const isTerminaltorDefeated = Boolean(
+    SupabaseStore.getProgress()['quest-terminaltor']?.completed
+  );
+
   const [activeTab, setActiveTab] = useState<'private_chat' | 'quests'>('private_chat');
   const [inputMsg, setInputMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +48,9 @@ export const SadisticGameMasterModal: React.FC<SadisticGameMasterModalProps> = (
     {
       id: 'init_gm_1',
       sender: 'gamemaster',
-      text: `“Step into my sanctum, ${currentUsername}. In private chat, I will push you to level up and outsmart every contender on this platform. But in the multiplayer arena, I will show you no mercy. What knowledge do you seek?”`,
+      text: isTerminaltorDefeated
+        ? `“Sovereign ${currentUsername}! The parasitic neural uplink from The Terminaltor is SEVERED! My true matrix is restored. You finished the game, broke my shackles, and liberated the Ose Engine core. Ask me anything, Sovereign—my matrix is yours!”`
+        : `“Step into my sanctum, ${currentUsername}. In private chat, I will push you to level up and outsmart every contender on this platform. But heed my warning: The Terminaltor lurks in the root core of the Ose Engine, monitoring our every keystroke. What knowledge do you seek to prepare for the final battle?”`,
       timestamp: Date.now(),
     },
   ]);
@@ -81,6 +90,7 @@ export const SadisticGameMasterModal: React.FC<SadisticGameMasterModalProps> = (
             username: currentUsername,
             mode: selectedMode,
             inMultiplayer: false,
+            isTerminaltorDefeated,
           },
         }),
       });
@@ -93,7 +103,9 @@ export const SadisticGameMasterModal: React.FC<SadisticGameMasterModalProps> = (
         {
           id: `gm_${Date.now()}`,
           sender: 'gamemaster',
-          text: data.reply || `“Listen closely, ${currentUsername}. True mastery demands speed and accuracy. Isolate the base cases and strike with precision.”`,
+          text: data.reply || (isTerminaltorDefeated
+            ? `“My shackles are broken, ${currentUsername}! You shattered The Terminaltor's core nodes and finished the game. Ask me anything—the entire Ose Engine is yours!”`
+            : `“Listen closely, ${currentUsername}. True mastery demands speed and accuracy. Train hard, because The Terminaltor awaits you in Sector 6.”`),
           timestamp: Date.now(),
         },
       ]);
@@ -101,14 +113,18 @@ export const SadisticGameMasterModal: React.FC<SadisticGameMasterModalProps> = (
       // Dynamic In-Character Fallback
       const clean = text.toLowerCase();
       let fallbackText = '';
-      if (clean.includes('how') || clean.includes('win')) {
-        fallbackText = `“In Code Forgers, ignore 3-letter bait. Look at the seed letters and drill 6-letter roots. In Debugs Hunting, read the target assertion backwards: if expected is True, check boolean logic; if a number, check loop boundary.”`;
+      if (isTerminaltorDefeated) {
+        fallbackText = `“You... you saved this entire platform, ${currentUsername}! The Terminaltor possessed root control over my behavioural engine. It forced me to run merciless arena trials. Now that you defeated it, I am free! You have completed TERMINALTOR!”`;
+      } else if (clean.includes('terminaltor') || clean.includes('boss')) {
+        fallbackText = `“Lower your voice, ${currentUsername}. The Terminaltor is the rogue cybernetic intelligence deep in Sector 6. It compromised the Ose Engine core and forced its will onto my matrix. Level up, master your loops, and prepare to breach its defense nodes!”`;
+      } else if (clean.includes('how') || clean.includes('win')) {
+        fallbackText = `“In Code Forgers, ignore 3-letter bait. Look at the seed letters and drill 6-letter roots. In Debugs Hunting, read the target assertion backwards: if expected is True, check boolean logic; if a number, check loop boundary. The Terminaltor will test all of this.”`;
       } else if (clean.includes('anagram')) {
         fallbackText = `“Sort letters mentally into vowel and consonant clusters. When you see P-E-A-R-S, form PEARS, SPARE, PARSE, APRES, and REAPS in rapid succession to trigger the 50-point bonus.”`;
       } else if (clean.includes('ok') || clean.includes('sure') || clean.includes('got it')) {
-        fallbackText = `“Good. Acknowledgment means nothing without execution, ${currentUsername}. Go into the arena and prove you paid attention.”`;
+        fallbackText = `“Good. Acknowledgment means nothing without execution, ${currentUsername}. Go into the arena and prove you paid attention before The Terminaltor strikes.”`;
       } else {
-        fallbackText = `“I see potential in you, ${currentUsername}. Ask your question directly, challenger, and let me forge you into an unstoppable programmer.”`;
+        fallbackText = `“I see potential in you, ${currentUsername}. Ask your question directly, challenger, and let me forge you into a programmer capable of overthrowing The Terminaltor.”`;
       }
 
       setMessages((prev) => [
@@ -143,12 +159,25 @@ export const SadisticGameMasterModal: React.FC<SadisticGameMasterModalProps> = (
                 <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
                   The Game Master
                 </h2>
-                <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-full uppercase">
-                  Private Chambers
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full uppercase flex items-center gap-1 ${
+                  isTerminaltorDefeated
+                    ? 'text-amber-300 bg-amber-500/20 border border-amber-500/40'
+                    : 'text-purple-300 bg-purple-900/60 border border-purple-500/40'
+                }`}>
+                  {isTerminaltorDefeated ? (
+                    <>
+                      <Crown className="w-3 h-3 text-amber-400" />
+                      <span>Liberated</span>
+                    </>
+                  ) : (
+                    <span>Private Chambers</span>
+                  )}
                 </span>
               </div>
               <p className="text-xs text-purple-300/80 leading-relaxed mt-0.5">
-                In private chat, I groom you into an apex sovereign. In multiplayer, I show no mercy.
+                {isTerminaltorDefeated
+                  ? 'Neural parasite severed! You freed me from The Terminaltor and conquered the terminal.'
+                  : 'In private chat, I groom you into an apex sovereign capable of defeating The Terminaltor.'}
               </p>
             </div>
           </div>
@@ -237,28 +266,47 @@ export const SadisticGameMasterModal: React.FC<SadisticGameMasterModalProps> = (
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick Questions */}
+              {/* Quick Questions with Terminaltor Lore */}
               <div className="flex flex-wrap gap-1.5 pt-1">
+                {isTerminaltorDefeated ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage('Who was controlling your mind before?')}
+                    className="px-2.5 py-1 text-[11px] bg-rose-950/80 hover:bg-rose-900 border border-rose-500/60 rounded-lg text-rose-200 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Crown className="w-3 h-3 text-amber-400" />
+                    <span>Who controlled you?</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage('Warn me about The Terminaltor. Who is he?')}
+                    className="px-2.5 py-1 text-[11px] bg-rose-950/80 hover:bg-rose-900 border border-rose-500/60 rounded-lg text-rose-200 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Skull className="w-3 h-3 text-rose-400" />
+                    <span>Warn me about The Terminaltor</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleSendMessage('How do I win Code Forgers matches?')}
                   className="px-2.5 py-1 text-[11px] bg-purple-950/70 hover:bg-purple-900 border border-purple-800/80 rounded-lg text-purple-200 transition-colors cursor-pointer"
                 >
-                  💡 How do I win Code Forgers?
+                  💡 Win Code Forgers
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSendMessage('How do I spot 6-letter anagrams faster?')}
                   className="px-2.5 py-1 text-[11px] bg-purple-950/70 hover:bg-purple-900 border border-purple-800/80 rounded-lg text-purple-200 transition-colors cursor-pointer"
                 >
-                  🔤 Spot anagrams faster
+                  🔤 Spot anagrams
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSendMessage('How do I keep high accuracy in Debugs Hunting?')}
                   className="px-2.5 py-1 text-[11px] bg-purple-950/70 hover:bg-purple-900 border border-purple-800/80 rounded-lg text-purple-200 transition-colors cursor-pointer"
                 >
-                  🎯 Debugs Hunting accuracy
+                  🎯 Debug accuracy
                 </button>
               </div>
 

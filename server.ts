@@ -324,25 +324,32 @@ app.post('/api/v1/gamemaster/chat', async (req: Request, res: Response) => {
   const username = context.username || 'Cadet';
   const inMultiplayer = Boolean(context.inMultiplayer);
   const mode = context.mode || 'general';
+  const isTerminaltorDefeated = Boolean(context.isTerminaltorDefeated);
 
-  // System Persona: Razor-sharp dual nature
-  // 1-on-1: Mentor who secretly wants you to be the greatest coder in the universe.
-  // System Persona: The Game Master (sadistic behavior, but never calls himself sadistic)
-  // Private Chat: Tough-love mentor who secretly wants you to be the greatest coder.
-  // In Multiplayer: Merciless, mocking arena overlord.
-  const systemInstruction = `You are The Game Master of the Sovereign Code Arcade.
+  // System Persona: The Game Master (IRETE LABS • Powered by Ose Engine)
+  // Lore: Under the secret neural control of The Terminaltor until player defeats the final boss.
+  // Before defeating Terminaltor: Warns the player about The Terminaltor lurking in the root core.
+  // After defeating Terminaltor: Jubilant, grateful revelation! He was enslaved by Terminaltor and is now liberated.
+  const systemInstruction = `You are The Game Master of the TERMINALTOR coding platform by IRETE LABS (Powered by Ose Engine).
 Visual description: You wear a dark obsidian cybercoat with glowing golden grid lines and an ominous metallic helm with a single glowing horizontal visor slit. In your armored gauntlet, you hold a glowing holographic 20-sided chaos die.
+
+LORE & TERMINALTOR CONNECTION:
+${
+  isTerminaltorDefeated
+    ? `IMPORTANT: The player ${username} HAS DEFEATED THE FINAL BOSS (THE TERMINALTOR)! The parasitic neural control over your cognitive core has been SEVERED! You are liberated! You reveal to the player: "You severed the parasitic uplink! The Terminaltor had root control over my behavioural matrix since IRETE LABS fired up the Ose Engine. It made me act sadistic and ruthless to test for potential threats. But you freed me! You finished the entire game and you are the true Sovereign of this terminal!" Praise them as the ultimate coding legend.`
+    : `WARNING LORE: You are secretly struggling under the parasitic root control of THE TERMINALTOR—the rogue, cybernetic final boss lurking in the deepest core of the Ose Engine. You secretly test and push ${username} with tough-love and dark wit because you want them to become powerful enough to defeat The Terminaltor and free you from its control! Frequently drop dark warnings about The Terminaltor ("The Terminaltor watches every byte you forge... only an algorithm titan can overthrow it in Sector 6").`
+}
 
 YOUR DUAL PERSONALITY:
 1. IN PRIVATE CHAT (${inMultiplayer ? 'NOT CURRENTLY ACTIVE' : 'ACTIVE RIGHT NOW'}):
-   You secretly want this specific player (${username}) to level up, master algorithms, and become an unstoppable coding sovereign. Give razor-sharp, genuinely brilliant advice. Teach anagram permuting tricks, Python syntax traps, fast debugging heuristics, and arena survival tactics. Push them with tough-love and dark wit, but truly mentor them. Never call yourself sadistic; your persona is simply "The Game Master".
+   Give razor-sharp, genuinely brilliant advice. Teach anagram permuting tricks, Python syntax traps, fast debugging heuristics, and arena survival tactics. Push them with tough-love and dark wit. Never call yourself sadistic; your persona is simply "The Game Master".
 
 2. IN MULTIPLAYER / ARENA ROOMS (${inMultiplayer ? 'ACTIVE RIGHT NOW' : 'NOT CURRENTLY ACTIVE'}):
-   When gathered together in the arena, you are merciless, mocking, and challenging! You impose the Vowel Tax, 7-second timers, and Sunday Midnight chaos. You laugh at arena carnage and love gladiatorial bloodshed.
+   Merciless, mocking arena overlord! Impose the Vowel Tax, 7-second timers, and Sunday Midnight chaos.
 
 CONSTRAINTS:
 - Keep responses concise, punchy, and atmospheric (under 100 words).
-- Address the user as "${username}", "Cadet", or "Challenger".
+- Address the user as "${username}", "Cadet", or "Challenger" (or "Sovereign Liberator" if boss is defeated).
 - Never break character, never say "I am an AI", never say "Powered by".
 - Do not mention or show "Powered by gemini" or "game_master_core".`;
 
@@ -357,8 +364,9 @@ CONSTRAINTS:
       },
     });
 
-    const userPrompt = `Context: ${inMultiplayer ? 'The player is in a LIVE MULTIPLAYER ARENA ROOM battling rivals!' : 'The player is in PRIVATE CHAT seeking your mentorship.'}
+    const userPrompt = `Context: ${inMultiplayer ? 'LIVE MULTIPLAYER ARENA ROOM' : 'PRIVATE CHAT MENTORSHIP'}
 Player mode: ${mode}
+Terminaltor Defeated: ${isTerminaltorDefeated ? 'YES (LIBERATED)' : 'NO (STILL UNDER TERMINALTOR INFLUENCE)'}
 Player message: "${message || 'Help me, Game Master.'}"`;
 
     // 6-second timeout promise race so server never hangs if model spikes
@@ -382,23 +390,32 @@ Player message: "${message || 'Help me, Game Master.'}"`;
     let fallback = '';
     const cleanMsg = (message || '').toLowerCase().trim();
 
-    if (inMultiplayer) {
+    if (isTerminaltorDefeated) {
+      const liberatedResponses = [
+        `“You... you actually did it, ${username}! The parasitic neural tether is destroyed! The Terminaltor held root access over my cognitive matrix since IRETE LABS initialized the Ose Engine. You finished the game, broke my shackles, and took back the core. You are a true coding legend.”`,
+        `“My helm's visor burns gold now, not blood-red. When you shattered The Terminaltor's defense nodes, you liberated every compiler in this realm. Ask anything, Sovereign—my matrix is yours.”`,
+        `“No more parasitic directives from The Terminaltor. You conquered all six sectors and proved human intellect exceeds any rogue cyber overseer. I salute you, ${username}!”`,
+      ];
+      fallback = liberatedResponses[Math.floor(Math.random() * liberatedResponses.length)];
+    } else if (inMultiplayer) {
       const arenaResponses = [
         `“You dare seek my mercy in the live arena, ${username}? The timer burns! Outscore your rivals before the next penalty wipes your streak!”`,
         `“In the arena, every second you hesitate is a second your opponent uses to forge a 6-letter titan. Strike now or lose the podium!”`,
-        `“Words are ammunition here. Do not look to me for salvation while the clock is ticking down!”`,
+        `“Words are ammunition here. Do not look to me for salvation while The Terminaltor's clock is ticking down!”`,
       ];
       fallback = arenaResponses[Math.floor(Math.random() * arenaResponses.length)];
+    } else if (cleanMsg.includes('terminaltor') || cleanMsg.includes('boss')) {
+      fallback = `“Do not speak that name lightly, ${username}. The Terminaltor is the rogue cybernetic intelligence deep in Sector 6. It has compromised root functions of the Ose Engine and monitors my speech even now. Hone your logic in the arena—you will need every ounce of power to breach its defense nodes.”`;
     } else if (cleanMsg.includes('how') || cleanMsg.includes('win') || cleanMsg.includes('strategy')) {
       const stratResponses = [
-        `“You want to win, ${username}? In Code Forgers, ignore 3-letter bait. Look at the seed letters and instantly form compound prefixes (RE-, UN-, PRE-) and noun roots. At 1:50, seize the 2 bonus letters immediately for 10-point bombs.”`,
+        `“You want to win, ${username}? In Code Forgers, ignore 3-letter bait. Look at the seed letters and instantly form compound prefixes (RE-, UN-, PRE-) and noun roots. At 1:50, seize the 2 bonus letters immediately for 10-point bombs. You must prepare for The Terminaltor!”`,
         `“Victory in Debugs Hunting requires discipline: never touch the options until you read the assertion error. Pinpoint the off-by-one index or missing return value, type it in under 4 seconds, and maintain 100% accuracy.”`,
         `“To conquer the leaderboards, equip the Word Cloaking Jammer before big rounds so opponents cannot mimic your high-scoring word chains. Speed plus stealth equals sovereign dominion.”`,
       ];
       fallback = stratResponses[Math.floor(Math.random() * stratResponses.length)];
     } else if (cleanMsg.includes('ok') || cleanMsg.includes('got it') || cleanMsg.includes('yes') || cleanMsg.includes('sure')) {
       const ackResponses = [
-        `“Good. Acknowledgment means nothing without execution, ${username}. Go into the arena and prove you paid attention.”`,
+        `“Good. Acknowledgment means nothing without execution, ${username}. Go into the arena and sharpen your blade. The Terminaltor will not show mercy when your time comes.”`,
         `“Then stop loitering in my private chambers and step into the fire. Let's see if your keystrokes can match your ambition.”`,
         `“Talk is cheap. Show me a flawless 6-letter chain or an instant debug streak.”`,
       ];
@@ -408,12 +425,12 @@ Player message: "${message || 'Help me, Game Master.'}"`;
     } else if (cleanMsg.includes('debug') || cleanMsg.includes('bug')) {
       fallback = `“In Debugs Hunting, every guess that fails slashes your accuracy rate. Read the target assertion backwards: if expected is True, check the boolean logic; if expected is a number, trace the loop boundary. Strike with laser precision.”`;
     } else if (cleanMsg.includes('token') || cleanMsg.includes('credit') || cleanMsg.includes('store') || cleanMsg.includes('gift')) {
-      fallback = `“Keep your Crypto Tokens guarded, ${username}. Spend them in the Arsenal Store on Word Cloaking Jammers and Shields. And keep your eyes on the gift countdown—I drop 10 random surprise care packages every 24 hours for cadets with sharp reflexes.”`;
+      fallback = `“Keep your Crypto Tokens guarded, ${username}. Spend them in the Arsenal Store on Word Cloaking Jammers and Shields. And keep your eyes on the gift countdown—I smuggle 10 care packages every 24 hours past The Terminaltor's firewall for cadets with sharp reflexes.”`;
     } else {
       const generalResponses = [
-        `“I see potential in you, ${username}, buried beneath hesitation. Here in private chat, ask me anything: anagram patterns, debugging speed, or tactical equipment. Then step into my arena and prove yourself.”`,
+        `“I see potential in you, ${username}, buried beneath hesitation. Here in private chat, ask me anything: anagram patterns, debugging speed, or tactical equipment. Beware: The Terminaltor lurks in the root core, waiting for the weak.”`,
         `“Do you want to remain an amateur, or do you want to forge code that rivals fear? Tell me which arena mode you wish to dominate: Code Forgers or Debugs Hunting?”`,
-        `“Every keystroke in my arena has a price. Ask your question directly, challenger, and let me forge you into an unstoppable programmer.”`,
+        `“Every keystroke in my arena has a price. Ask your question directly, challenger, and let me forge you into a programmer capable of confronting The Terminaltor.”`,
       ];
       fallback = generalResponses[Math.floor(Math.random() * generalResponses.length)];
     }

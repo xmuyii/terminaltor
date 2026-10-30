@@ -62,6 +62,16 @@ export const SadisticGameMasterBubble: React.FC<SadisticGameMasterBubbleProps> =
     }
   }, []);
 
+  // Listen for sovereign_open_game_master custom event from banners or buttons
+  useEffect(() => {
+    const handleOpen = () => {
+      dismissOnboarding();
+      setIsOpen(true);
+    };
+    window.addEventListener('sovereign_open_game_master', handleOpen);
+    return () => window.removeEventListener('sovereign_open_game_master', handleOpen);
+  }, []);
+
   const dismissOnboarding = () => {
     setShowOnboardingTip(false);
     if (typeof window !== 'undefined') {

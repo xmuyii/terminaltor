@@ -5,6 +5,9 @@ dist/
 coverage/
 .DS_Store
 *.log
+bun.lock
+bun.lockb
+tmp_dropbox_pwa/
 
 # Python
 __pycache__/

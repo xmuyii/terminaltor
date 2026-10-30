@@ -283,6 +283,30 @@ export const QuestMap: React.FC<QuestMapProps> = ({
 
                 {/* Card Body */}
                 <div className="p-4 flex-1 space-y-3 text-xs">
+                  {isBoss && (
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-3 rounded-xl bg-black/60 border border-rose-500/30">
+                      <div className="w-full sm:w-44 h-28 rounded-lg overflow-hidden shrink-0 border border-rose-500/40 shadow-inner">
+                        <img
+                          src="/assets/terminaltor_boss.jpg"
+                          alt="The Terminaltor"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-rose-400 uppercase text-[11px]">Rogue Mainframe Core</span>
+                          <span className="text-[10px] font-mono text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-600/40">LVL 99</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 italic">
+                          &ldquo;I AM THE FINAL BOSS OF THE TERMINAL. I speak in broken code and corrupted loops.&rdquo;
+                        </p>
+                        <div className="text-[10px] font-mono text-slate-400 pt-1">
+                          Defeat him to purge root control, restore the Ose Engine, and finish the entire game!
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <p className={`leading-relaxed line-clamp-2 ${isBoss ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
                     {quest.description}
                   </p>

@@ -62,22 +62,30 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             </div>
           </div>
 
-          {/* Hero Visual Asset */}
+          {/* Hero Visual Asset: The Terminaltor */}
           <div className="lg:col-span-5 relative">
-            <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl group">
+            <div className="relative rounded-3xl overflow-hidden border-2 border-emerald-500/40 bg-slate-950 shadow-[0_0_50px_rgba(16,185,129,0.25)] group">
               <img
-                src="/src/assets/images/sovereign_academy_hero_1791795619314.jpg"
-                alt="Cybernetic Academy Advanced Coding Laboratory"
+                src="/assets/terminaltor_boss.jpg"
+                alt="TERMINALTOR - Final Coding Boss"
                 referrerPolicy="no-referrer"
                 className="w-full h-auto object-cover aspect-video group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex items-end p-6">
-                <div className="text-xs text-slate-300 flex items-center gap-2 font-mono">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span className="font-bold text-emerald-400">Multiplayer Arena</span>
-                  <span className="text-slate-600">·</span>
-                  <span>Instant 1-Click Competition</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/30 to-transparent flex flex-col justify-end p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs text-slate-200 flex items-center gap-2 font-mono">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                    <span className="font-bold text-white uppercase tracking-wider">TERMINALTOR</span>
+                    <span className="text-slate-500">·</span>
+                    <span className="text-emerald-400 font-semibold">Coding Boss</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                    🌿 Ose Engine Core
+                  </span>
                 </div>
+                <p className="text-[11px] text-slate-400 mt-1 line-clamp-1 font-mono">
+                  &ldquo;I AM WATCHING, CODERS. PRESS THROUGH... IF YOU CAN.&rdquo;
+                </p>
               </div>
             </div>
           </div>
