@@ -1,0 +1,5 @@
+{
+  "1": "Recall the Euclidean algorithm: the greatest common divisor of a and b equals that of b and a mod b.",
+  "2": "What is the base case when the remainder b reaches zero?",
+  "3": "Return a when b is zero, otherwise return recursive call with b and a modulo b."
+}

@@ -1,0 +1,5 @@
+{
+  "1": "A peak is an element strictly greater than both its left and right neighbors.",
+  "2": "Loop from index one to length minus two so both neighbors exist.",
+  "3": "Check if element at i is greater than i minus one and greater than i plus one, collecting peaks."
+}

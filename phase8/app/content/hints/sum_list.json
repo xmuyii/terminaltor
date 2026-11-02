@@ -1,0 +1,5 @@
+{
+  "1": "Start with a running total initialized to zero.",
+  "2": "Add each item in the list to the total during iteration.",
+  "3": "Return the total variable after the loop terminates completely."
+}

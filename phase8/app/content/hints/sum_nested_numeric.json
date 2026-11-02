@@ -1,0 +1,5 @@
+{
+  "1": "Check if the current item is an integer or another nested list.",
+  "2": "If an item is an integer add it; if it is a list, make a recursive call on that sublist.",
+  "3": "Sum the results of recursive calls across all items in the list."
+}

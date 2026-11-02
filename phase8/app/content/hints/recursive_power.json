@@ -1,0 +1,5 @@
+{
+  "1": "What is your base case when exponent reaches zero?",
+  "2": "A number to power n is the number multiplied by itself to power n minus one.",
+  "3": "Return one if exponent is zero, else return base multiplied by recursive call with exponent minus one."
+}

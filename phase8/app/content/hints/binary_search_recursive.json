@@ -1,0 +1,5 @@
+{
+  "1": "Define base cases: low index greater than high index indicates the target is absent.",
+  "2": "Calculate midpoint index and compare element at mid with target.",
+  "3": "Recurse on the left half if target is smaller, or right half if target is larger, returning mid on match."
+}

@@ -1,0 +1,5 @@
+{
+  "1": "Group words into lists keyed by their character length.",
+  "2": "Use the length of each word as the dictionary key.",
+  "3": "Append each word to the list at key equal to its length, initializing an empty list if new."
+}

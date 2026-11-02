@@ -1,0 +1,5 @@
+{
+  "1": "You need to take one item from the first list, then one from the second list alternately.",
+  "2": "Iterate up to the length of the shorter list, or handle mismatched lengths with remaining tails.",
+  "3": "Append pairs of elements in turn and extend with any leftover elements from the longer list."
+}

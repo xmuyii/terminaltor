@@ -1,0 +1,5 @@
+{
+  "1": "What happens when k is larger than the length of the list?",
+  "2": "Use modulo of k by the list length to handle rotations greater than array size.",
+  "3": "Slice the last k elements and concatenate them in front of the remaining initial elements."
+}

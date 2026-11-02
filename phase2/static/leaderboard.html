@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All-Time Leaderboard — Sovereign Academy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="brand">
+        <a href="index.html" class="nav-brand-link">
+          <span class="brand-icon">⚡</span>
+          <h1>Sovereign Academy</h1>
+        </a>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Challenges</a>
+        <a href="leaderboard.html" class="nav-link active">Leaderboard</a>
+        <a href="profile.html" class="nav-link">Profile</a>
+      </nav>
+    </header>
+
+    <main class="leaderboard-container">
+      <div class="leaderboard-header">
+        <div>
+          <h2>All-Time Student Leaderboard</h2>
+          <p class="leaderboard-subtitle">Students ranked by total verified challenge XP.</p>
+        </div>
+        <div id="myRankBadge" class="my-rank-badge hidden">My Rank: #--</div>
+      </div>
+
+      <div class="table-card">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;">Rank</th>
+              <th>Student Cadet</th>
+              <th style="width: 160px; text-align: right;">Total XP</th>
+              <th style="width: 140px; text-align: right;">Challenges</th>
+              <th style="width: 160px; text-align: right;">Last Active</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr>
+              <td colspan="5" class="table-empty-row">Loading leaderboard rankings...</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar">
+          <button id="prevPageBtn" class="btn btn-secondary" disabled>← Previous</button>
+          <span id="pageIndicator" class="page-indicator">Page 1 of 1</span>
+          <button id="nextPageBtn" class="btn btn-secondary" disabled>Next →</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="leaderboard.js"></script>
+</body>
+</html>

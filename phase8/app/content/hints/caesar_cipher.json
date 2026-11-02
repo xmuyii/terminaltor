@@ -1,0 +1,5 @@
+{
+  "1": "Shift each alphabetic letter by the given offset wrapping around twenty-six.",
+  "2": "Preserve letter casing: handle uppercase and lowercase ranges independently.",
+  "3": "Leave punctuation, spaces, and digits unchanged while shifting alphabetic characters."
+}

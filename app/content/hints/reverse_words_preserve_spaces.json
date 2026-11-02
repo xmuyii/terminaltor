@@ -1,0 +1,5 @@
+{
+  "1": "Notice that word letters are reversed, but original word positions or spaces must be preserved.",
+  "2": "Split words and reverse each word individually.",
+  "3": "Reconstruct the sentence preserving whitespace structure with reversed word tokens."
+}

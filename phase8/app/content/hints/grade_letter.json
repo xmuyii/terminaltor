@@ -1,0 +1,5 @@
+{
+  "1": "Check the boundary values for each letter grade cutoff.",
+  "2": "Evaluate grades in descending order starting from ninety for grade A down to sixty.",
+  "3": "Use if, elif chains to return strings A, B, C, D, and default to F for scores under sixty."
+}

@@ -1,0 +1,129 @@
+[
+  {
+    "id": "cs-01",
+    "text": "What is the primary difference between a class and a struct in C#?",
+    "options": [
+      "A class is a reference type allocated on the heap; a struct is a value type typically on the stack",
+      "A struct can inherit from other structs, whereas classes cannot inherit",
+      "A struct cannot have methods or constructors",
+      "A class can only contain static members"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-02",
+    "text": "What does the 'using' statement or declaration ensure for objects implementing IDisposable?",
+    "options": [
+      "The object is held permanently in Generation 2 GC",
+      "Dispose() is automatically invoked when execution exits the scope, even on exceptions",
+      "The object becomes accessible across multiple OS processes",
+      "The compiler prevents any asynchronous tasks from accessing the object"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "cs-03",
+    "text": "In C#, what does the Span<T> type provide?",
+    "options": [
+      "A contiguous representation of arbitrary memory without heap allocations",
+      "A thread-safe concurrent distributed database cache",
+      "A wrapper around HTTP network requests for telemetry tracking",
+      "A scheduler for background Cron tasks"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-04",
+    "text": "What is the purpose of the 'async' and 'await' keywords in C#?",
+    "options": [
+      "Spawns a new operating system process for each call",
+      "Transforms methods into state machines that release threads while waiting on Tasks",
+      "Disables all garbage collection during the method execution",
+      "Guarantees that methods run in parallel on separate GPU kernels"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "cs-05",
+    "text": "What does a record type introduce in modern C# (C# 9+)?",
+    "options": [
+      "Syntactic sugar for value-based equality semantics and immutable data models",
+      "A replacement for SQL stored procedures inside the CLR",
+      "A specialized audio-streaming format for media applications",
+      "A database table definition tied directly to Entity Framework"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-06",
+    "text": "What is boxing in C# .NET?",
+    "options": [
+      "Converting a value type to an object reference type, allocating on the heap",
+      "Encapsulating private fields with public properties",
+      "Compressing assemblies into single-file executable binaries",
+      "Wrapping exceptions inside an AggregateException"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-07",
+    "text": "What is the difference between IEnumerable<T> and IQueryable<T> in LINQ?",
+    "options": [
+      "IEnumerable executes in-memory; IQueryable builds expression trees translated by providers like SQL",
+      "IEnumerable is for relational databases; IQueryable is for NoSQL documents",
+      "IQueryable is synchronous only; IEnumerable is always asynchronous",
+      "There is no difference; IQueryable is just an alias for IEnumerable"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-08",
+    "text": "Which generation in the .NET Garbage Collector collects short-lived objects most frequently?",
+    "options": ["Generation 0", "Generation 1", "Generation 2", "Large Object Heap (LOH)"],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-09",
+    "text": "What does the 'volatile' keyword signify for a field in C#?",
+    "options": [
+      "Prevents compiler and CPU reordering, ensuring the most recent value is read across threads",
+      "Allows the field to be modified without invoking its property setter",
+      "Encrypts the field in memory using DPAPI",
+      "Ensures the field is destroyed as soon as the thread exits"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-10",
+    "text": "What does the ??= operator (null-coalescing assignment) do in C#?",
+    "options": [
+      "Assigns the right-hand value only if the left-hand variable evaluates to null",
+      "Compares both operands and throws NullReferenceException if they do not match",
+      "Sets the variable to null if an exception is thrown",
+      "Performs a bitwise XOR and clears the memory buffer"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-11",
+    "text": "What is the role of the SynchronizationContext in .NET?",
+    "options": [
+      "Coordinates dispatching units of work to specific threads (such as UI threads)",
+      "Maintains ACID transactions across distributed databases",
+      "Synchronizes system wall-clock time with NTP servers",
+      "Controls Docker container lifecycle events"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "cs-12",
+    "text": "What does the 'yield return' construct create in a C# method?",
+    "options": [
+      "A custom state machine that produces elements lazily on demand",
+      "A thread barrier that waits for other threads to finish",
+      "A cancellation token callback for task cancellation",
+      "An asynchronous stream that requires WebSockets"
+    ],
+    "correct_index": 0
+  }
+]

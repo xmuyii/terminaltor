@@ -1,0 +1,5 @@
+{
+  "1": "Strip leading protocol prefixes such as http and https.",
+  "2": "Remove any www prefix and take characters up to the first slash or colon.",
+  "3": "Return the clean host domain string."
+}

@@ -1,0 +1,5 @@
+{
+  "1": "You need to distinguish between positive, negative, and zero values.",
+  "2": "Compare n with zero using greater than and less than.",
+  "3": "Return one if n is positive, negative one if negative, and zero if n equals zero."
+}

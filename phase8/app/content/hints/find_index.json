@@ -1,0 +1,5 @@
+{
+  "1": "You need to inspect both the index position and the element value.",
+  "2": "Use the enumerate function or an index counter while looping through items.",
+  "3": "Return the index immediately when a match is found; return negative one if the loop finishes with no match."
+}

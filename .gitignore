@@ -1,0 +1,56 @@
+# Node & Frontend
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+bun.lock
+bun.lockb
+tmp_dropbox_pwa/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+# Python virtual environment directories (root only)
+/lib/
+/lib64/
+/env/lib/
+/venv/lib/
+/.venv/lib/
+parts/
+sdist/
+
+# Ensure frontend source directories are NEVER ignored
+!src/
+!src/**
+!src/lib/
+!src/lib/**
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.local.example

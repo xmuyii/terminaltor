@@ -1,0 +1,5 @@
+{
+  "1": "A leaf node is a node with no left or right children.",
+  "2": "If node is null return zero; if both left and right are null return one.",
+  "3": "Return sum of recursive leaf counts on left child and right child."
+}

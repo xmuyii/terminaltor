@@ -1,0 +1,6 @@
+{
+  "name": "Sovereign Academy - Gamified Python LMS & Sandbox",
+  "description": "Browser-executable Python WebAssembly sandbox and gamified learning management system with logic quests, live terminal execution, and progress tracking for young creators.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

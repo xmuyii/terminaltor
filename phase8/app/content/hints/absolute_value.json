@@ -1,0 +1,5 @@
+{
+  "1": "Check if the input number is negative.",
+  "2": "If the number is less than zero, invert its sign.",
+  "3": "Return negative n if n is less than zero, otherwise return n."
+}

@@ -1,0 +1,5 @@
+{
+  "1": "Observe the required order of operands in the subtraction.",
+  "2": "The result should be the first argument minus the second argument.",
+  "3": "Ensure you return a minus b rather than b minus a."
+}

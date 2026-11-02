@@ -1,0 +1,5 @@
+{
+  "1": "Compare keys between two dictionaries for additions, deletions, and modifications.",
+  "2": "Find keys unique to the first, unique to the second, and keys present in both with different values.",
+  "3": "Return a dictionary summarizing added, removed, and changed keys."
+}

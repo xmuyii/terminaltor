@@ -1,0 +1,5 @@
+{
+  "1": "Check whether each item in the list is itself an iterable list or an atomic item.",
+  "2": "Iterate through the outer list, and for sublists, iterate over their elements to append them.",
+  "3": "Extend your output list with sublist elements or append individual items if they are not lists."
+}

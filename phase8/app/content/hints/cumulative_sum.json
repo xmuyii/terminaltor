@@ -1,0 +1,5 @@
+{
+  "1": "Each element in the output is the sum of all elements up to that position.",
+  "2": "Maintain a running total as you iterate through the list.",
+  "3": "Append the updated running total to your result array at each step and return it."
+}

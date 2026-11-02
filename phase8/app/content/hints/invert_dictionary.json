@@ -1,0 +1,5 @@
+{
+  "1": "Swap the role of keys and values from the input dictionary.",
+  "2": "Consider what happens when multiple keys share the same value.",
+  "3": "Iterate through key-value pairs and map value as key and original key as value."
+}

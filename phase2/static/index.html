@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sovereign Academy — Gamified Coding LMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon">⚡</span>
+        <h1>Sovereign Academy</h1>
+        <span class="phase-badge">Phase 2: Gamified Loop</span>
+      </div>
+
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link active">Challenges</a>
+        <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+        <a href="profile.html" class="nav-link">Profile</a>
+      </nav>
+
+      <div class="user-control" id="userControlArea">
+        <span id="userStatusText">Not Logged In</span>
+        <button id="authActionBtn" class="btn btn-secondary">Login</button>
+      </div>
+    </header>
+
+    <!-- Workspace Layout -->
+    <div class="workspace-grid">
+      <!-- Left Panel: Challenges List -->
+      <aside class="sidebar-panel">
+        <div class="panel-header">
+          <h2>Coding Challenges</h2>
+          <span class="count-badge" id="challengeCountBadge">20</span>
+        </div>
+        <div class="challenges-list" id="challengesList">
+          <div class="loading-spinner">Loading challenges...</div>
+        </div>
+      </aside>
+
+      <!-- Center & Right Panel: Editor and Results -->
+      <main class="editor-panel">
+        <section class="challenge-briefing" id="challengeBriefing">
+          <div class="briefing-header">
+            <h3 id="currentTitle">Select a Challenge</h3>
+            <span class="tier-pill" id="currentTier">Tier 1</span>
+          </div>
+          <p id="currentDescription">Choose a problem from the left sidebar to begin coding.</p>
+        </section>
+
+        <!-- Monaco Editor -->
+        <section class="editor-section">
+          <div class="editor-toolbar">
+            <div class="file-name">main.py (Python 3.11)</div>
+            <div class="toolbar-actions">
+              <button id="resetCodeBtn" class="btn btn-ghost" title="Reset template">Reset</button>
+              <button id="runCodeBtn" class="btn btn-primary">
+                <span class="play-icon">▶</span>
+                <span>Run Solution</span>
+              </button>
+            </div>
+          </div>
+          <div id="monacoContainer" class="monaco-container"></div>
+        </section>
+
+        <!-- Results & Rewards -->
+        <section class="results-section">
+          <div class="results-header">
+            <h4>Evaluation Results &amp; Rewards</h4>
+            <div class="runtime-badge" id="runtimeBadge">Runtime: -- ms</div>
+          </div>
+
+          <!-- Overall Pass/Fail Banner -->
+          <div id="overallBanner" class="overall-banner hidden"></div>
+
+          <!-- Rewards Strip (New in Phase 2) -->
+          <div id="rewardsStrip" class="rewards-strip hidden">
+            <div class="reward-item" id="xpPill">
+              <span class="reward-icon">⚡</span>
+              <span id="xpPillText">+10 XP</span>
+            </div>
+            <div class="reward-item" id="streakPill">
+              <span class="reward-icon">🔥</span>
+              <span id="streakPillText">1 Day Streak</span>
+            </div>
+            <div class="badges-unlocked-container" id="badgesUnlockedContainer"></div>
+          </div>
+
+          <!-- Per-Test Results List -->
+          <div class="test-cards-grid" id="testCardsGrid">
+            <div class="empty-tests-placeholder">
+              Click &quot;Run Solution&quot; to test your Python code against test assertions.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay hidden" id="loginModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Student Login (Supabase Auth)</h3>
+        <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <form id="loginForm" class="login-form">
+        <p class="modal-subtitle">Log in to track submissions and evaluate solutions.</p>
+        <div class="form-group">
+          <label for="studentEmail">Email</label>
+          <input type="email" id="studentEmail" placeholder="student@sovereign.academy" required value="student@sovereign.academy">
+        </div>
+        <div class="form-group">
+          <label for="studentPassword">Password</label>
+          <input type="password" id="studentPassword" placeholder="••••••••" required value="secret1234">
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary w-full">Sign In</button>
+          <button type="button" id="demoStudentBtn" class="btn btn-secondary w-full">Use Instant Demo Session</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

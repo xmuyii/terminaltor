@@ -1,0 +1,5 @@
+{
+  "1": "In a matrix transpose, rows become columns and columns become rows.",
+  "2": "Loop through column indices first, then collect elements from each row at that column.",
+  "3": "Construct each new row by gathering matrix row j column i and return the transposed matrix."
+}

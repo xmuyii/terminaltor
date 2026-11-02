@@ -1,0 +1,5 @@
+{
+  "1": "Consider using the modulo operator to find the remainder after dividing by two.",
+  "2": "An integer is even if its remainder when divided by two is zero.",
+  "3": "Return the boolean comparison of n modulo two equal to zero."
+}

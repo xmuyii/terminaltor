@@ -1,0 +1,5 @@
+{
+  "1": "Traverse a series of nested dictionary keys one step at a time.",
+  "2": "Check if current level is a dictionary and contains the target key before advancing.",
+  "3": "Return the final value reached, or default fallback if any key in the path is missing."
+}

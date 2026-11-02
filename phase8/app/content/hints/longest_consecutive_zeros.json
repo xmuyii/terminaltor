@@ -1,0 +1,5 @@
+{
+  "1": "Track both current consecutive zero count and the maximum zero streak seen so far.",
+  "2": "Reset the current count to zero whenever a non-zero element appears.",
+  "3": "Update maximum streak with current count whenever current exceeds maximum."
+}

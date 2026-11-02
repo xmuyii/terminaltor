@@ -1,0 +1,5 @@
+{
+  "1": "An IPv4 address must consist of exactly four octets separated by dots.",
+  "2": "Each octet must be a numeric integer between zero and two hundred fifty-five without leading zeros.",
+  "3": "Verify four parts exist, all are digits, no leading zeros unless single zero, and range zero to two hundred fifty-five."
+}

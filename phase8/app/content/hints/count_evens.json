@@ -1,0 +1,5 @@
+{
+  "1": "Iterate through all integers up to n and filter for even numbers.",
+  "2": "Check each integer with modulo two equal to zero inside your loop.",
+  "3": "Increment a counter variable for each even number found and return the count."
+}

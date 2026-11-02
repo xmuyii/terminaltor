@@ -1,0 +1,5 @@
+{
+  "1": "Count consecutive duplicate characters as you traverse the string.",
+  "2": "When a new character appears, record the previous character and its count.",
+  "3": "Append character followed by count to the output and remember to flush the final group."
+}

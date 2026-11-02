@@ -1,0 +1,5 @@
+{
+  "1": "Count the frequency of each element in the input collection.",
+  "2": "Track the element associated with the highest frequency count.",
+  "3": "Return the element that achieved maximum count, breaking ties deterministically if required."
+}

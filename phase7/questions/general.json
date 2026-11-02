@@ -1,0 +1,119 @@
+[
+  {
+    "id": "gen-01",
+    "text": "What does ACID stand for in database transaction theory?",
+    "options": [
+      "Atomicity, Consistency, Isolation, Durability",
+      "Asynchronous, Concurrent, Isolated, Distributed",
+      "Accuracy, Completeness, Integrity, Dependability",
+      "Allocation, Caching, Indexing, Defragmentation"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "gen-02",
+    "text": "In distributed systems, what does the CAP Theorem state?",
+    "options": [
+      "A distributed data store can guarantee at most two of: Consistency, Availability, and Partition Tolerance",
+      "CPU, Allocations, and Pipelines scale linearly with node count",
+      "Caching Always Prevails over database disk latency",
+      "Transactions can achieve Concurrency, Atomicity, and Persistence simultaneously"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "gen-03",
+    "text": "What is the primary difference between TCP and UDP transport protocols?",
+    "options": [
+      "TCP provides reliable, ordered, connection-oriented delivery; UDP is connectionless and best-effort",
+      "UDP encrypts packets with TLS by default; TCP does not",
+      "TCP can only transmit text data; UDP transmits binary streams",
+      "UDP requires a 3-way handshake before sending data"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "gen-04",
+    "text": "What is the worst-case time complexity of QuickSort when choosing a naive first-element pivot?",
+    "options": ["O(n log n)", "O(n²)", "O(n)", "O(log n)"],
+    "correct_index": 1
+  },
+  {
+    "id": "gen-05",
+    "text": "What does a Bloom filter guarantee when checking set membership?",
+    "options": [
+      "No false positives, but possible false negatives",
+      "No false negatives, but possible false positives",
+      "Exact 100% precision with constant memory",
+      "Deterministic deletion of arbitrary items"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "gen-06",
+    "text": "Which HTTP status code is most appropriate for a client request that lacks valid authentication credentials?",
+    "options": ["400 Bad Request", "401 Unauthorized", "403 Forbidden", "404 Not Found"],
+    "correct_index": 1
+  },
+  {
+    "id": "gen-07",
+    "text": "What data structure is standardly used for indexing in relational databases to support efficient range scans?",
+    "options": ["Binary Heap", "B+ Tree", "Hash Table", "Trie"],
+    "correct_index": 1
+  },
+  {
+    "id": "gen-08",
+    "text": "What is cache thrashing in high-performance computer architecture?",
+    "options": [
+      "Clearing the cache after every system reboot",
+      "Repeatedly evicting and loading cache lines due to conflicting access patterns",
+      "Compressing memory pages to prevent out-of-memory errors",
+      "Writing dirty data to persistent storage asynchronously"
+    ],
+    "correct_index": 1
+  },
+  {
+    "id": "gen-09",
+    "text": "What does the Two-Phase Commit (2PC) protocol achieve in distributed databases?",
+    "options": [
+      "Coordinated atomic commits across multiple participant nodes",
+      "Two-tier hardware encryption of stored data files",
+      "Replication of data to exactly two geographic regions",
+      "Automatic failover when the primary node loses power"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "gen-10",
+    "text": "In public-key cryptography (like RSA), how are keys paired?",
+    "options": [
+      "The public key encrypts data; the private key decrypts it (and vice versa for signatures)",
+      "Both parties must keep the public key secret from eavesdroppers",
+      "The private key is shared publicly across DNS records",
+      "Both keys are identical symmetric bitmasks"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "gen-11",
+    "text": "What is the primary role of a reverse proxy in modern web infrastructure?",
+    "options": [
+      "Intercepts client requests, terminating TLS and load-balancing to backend origin servers",
+      "Translates frontend HTML code into backend SQL queries",
+      "Compiles JavaScript into machine code before sending to the client",
+      "Encrypts user passwords directly inside the browser DOM"
+    ],
+    "correct_index": 0
+  },
+  {
+    "id": "gen-12",
+    "text": "What is the primary advantage of event-driven non-blocking I/O over traditional thread-per-request architectures?",
+    "options": [
+      "Handles tens of thousands of concurrent idle connections with minimal memory overhead",
+      "Eliminates the need for operating system network sockets",
+      "Guarantees that database queries execute with zero latency",
+      "Removes all asynchronous await syntax from source code"
+    ],
+    "correct_index": 0
+  }
+]

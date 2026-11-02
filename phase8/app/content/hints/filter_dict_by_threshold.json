@@ -1,0 +1,5 @@
+{
+  "1": "Filter key-value pairs based on numeric value comparisons.",
+  "2": "Compare each value with the given threshold number.",
+  "3": "Construct and return a new dictionary containing only entries whose value meets or exceeds threshold."
+}

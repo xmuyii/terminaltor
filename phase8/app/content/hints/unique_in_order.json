@@ -1,0 +1,5 @@
+{
+  "1": "Notice that duplicate elements should only be filtered when they appear immediately adjacent.",
+  "2": "Keep track of the last element added to avoid repeating consecutive identical items.",
+  "3": "Compare each element with the previous element and append only when they differ."
+}

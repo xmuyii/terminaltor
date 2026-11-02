@@ -1,0 +1,5 @@
+{
+  "1": "A string of length zero or one is always a palindrome.",
+  "2": "Compare first character with last character; if they match, recurse on the inner substring.",
+  "3": "Return false if outer characters differ, otherwise return recursive check on string from index one to minus one."
+}
