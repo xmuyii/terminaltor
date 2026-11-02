@@ -1250,6 +1250,10 @@ app.post('/api/v1/telegram/create-invoice', async (req: Request, res: Response) 
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Fallback for development/preview without TELEGRAM_BOT_TOKEN
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
   return res.json({
     success: true,
     isSimulated: true,
@@ -1258,6 +1262,7 @@ app.post('/api/v1/telegram/create-invoice', async (req: Request, res: Response) 
   });
 });
 
+<<<<<<< HEAD
 // In-memory pending Telegram authentications to prevent account spoofing
 interface PendingTgAuth {
   username: string;
@@ -1336,6 +1341,8 @@ app.post('/api/v1/auth/telegram/verify-code', (req: Request, res: Response) => {
   });
 });
 
+=======
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
 // Webhook simulation endpoints
 app.post('/api/webhooks/paystack', (req: Request, res: Response) => {
   return res.json({ success: true, message: 'Paystack webhook received and verified.' });

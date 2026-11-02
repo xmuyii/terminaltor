@@ -81,6 +81,7 @@ class TelegramAuthService {
     return this.getSession();
   }
 
+<<<<<<< HEAD
   async requestCode(handle: string): Promise<{ success: boolean; code?: string; botUsername?: string; deepLink?: string; message?: string }> {
     const raw = handle.replace('@', '').trim().toLowerCase();
     if (!raw || raw.length < 3) {
@@ -156,6 +157,8 @@ class TelegramAuthService {
     return { success: false, message: 'Please enter a valid 6-digit verification code.' };
   }
 
+=======
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
   signInWithTelegram(handle: string): TelegramUserData {
     const raw = handle.replace('@', '').trim();
     const clean = raw || 'Cadet';

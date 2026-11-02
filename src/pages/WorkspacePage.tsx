@@ -138,6 +138,7 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
   const isCompleted = Boolean(progress[currentQuest.id]?.completed);
   const isLockedPro = currentQuest.is_pro && !profile.has_pro_pass && profile.role === 'student';
 
+<<<<<<< HEAD
   const questIndex = QUESTS.findIndex((q) => q.id === currentQuest.id);
   const precedingQuests = QUESTS.slice(0, questIndex);
   const completedPrecedingCount = precedingQuests.filter((q) => Boolean(progress[q.id]?.completed)).length;
@@ -159,6 +160,11 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
       setStderr(`🔒 Level Gated: You must complete Level ${QUESTS[questIndex - 1]?.level} first.`);
       return;
     }
+=======
+  // Fast Run code without grading
+  const handleRunCodeOnly = async () => {
+    if (isRunning) return;
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setStderr("Offline — you can browse, but you can't run code right now.");
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -213,6 +219,7 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
   // Run & Test validation against challenge criteria
   const handleRunAndValidate = async () => {
     if (isRunning) return;
+<<<<<<< HEAD
     if (isBossGated) {
       setStderr(`🔒 Final Battle Gated: You must solve all 5 foundational Python levels before challenging The Terminaltor. (${completedPrecedingCount}/5 cleared)`);
       return;
@@ -221,6 +228,8 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
       setStderr(`🔒 Level Gated: You must complete Level ${QUESTS[questIndex - 1]?.level} first.`);
       return;
     }
+=======
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setStderr("Offline — submissions require connectivity to verify results against the sandbox. You can browse, but you can't run code right now.");
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -390,6 +399,7 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
 
         {/* Right / Bottom Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
+<<<<<<< HEAD
           {isBossGated ? (
             <div className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold text-rose-300 bg-rose-950/70 border border-rose-800/80 rounded-xl">
               <Skull className="w-4 h-4 text-rose-400" />
@@ -401,6 +411,9 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
               <span>Complete Level {QUESTS[questIndex - 1]?.level} First</span>
             </div>
           ) : isLockedPro ? (
+=======
+          {isLockedPro ? (
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
             <button
               type="button"
               onClick={onOpenPassModal}
@@ -528,6 +541,7 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Level Gated Notification Banner */}
       {(isBossGated || isProgressionLocked) && (
         <div className="mx-3 mt-2 p-3.5 rounded-2xl bg-gradient-to-r from-rose-950/60 via-slate-900 to-[#070b14] border border-rose-600/50 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
@@ -558,6 +572,8 @@ export const WorkspacePage: React.FC<WorkspaceProps> = ({
         </div>
       )}
 
+=======
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
       {/* Main 3-Pane Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden p-3 gap-3">
         {/* Left Pane: Quest Lore, Objectives, Test Expectations (cols: 4) */}

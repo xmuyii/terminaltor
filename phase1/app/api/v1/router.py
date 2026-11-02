@@ -54,6 +54,7 @@ async def create_telegram_invoice(req: CreateTelegramInvoiceRequest):
     }
 
 
+<<<<<<< HEAD
 # In-memory verification storage for Phase 1 router
 _pending_tg_auth: dict[str, dict] = {}
 
@@ -113,5 +114,7 @@ async def verify_telegram_code(req: TelegramCodeVerify):
     }
 
 
+=======
+>>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
 api_v1_router.include_router(challenges_router)
 api_v1_router.include_router(execute_router)
