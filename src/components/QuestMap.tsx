@@ -212,16 +212,11 @@ export const QuestMap: React.FC<QuestMapProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-<<<<<<< HEAD
           {QUESTS.map((quest, idx) => {
-=======
-          {QUESTS.map((quest) => {
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
             const isCompleted = Boolean(progress[quest.id]?.completed);
             const isLockedPro = quest.is_pro && !profile.has_pro_pass && profile.role === 'student';
             const isBoss = Boolean(quest.is_boss);
 
-<<<<<<< HEAD
             // Strict progression gating:
             const precedingQuests = QUESTS.slice(0, idx);
             const completedPrecedingCount = precedingQuests.filter(q => Boolean(progress[q.id]?.completed)).length;
@@ -232,14 +227,11 @@ export const QuestMap: React.FC<QuestMapProps> = ({
               ? (!areAllPrecedingCompleted && profile.role === 'student')
               : (!isPreviousCompleted && profile.role === 'student');
 
-=======
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
             return (
               <div
                 key={quest.id}
                 className={`flex flex-col rounded-xl overflow-hidden shadow-lg transition-all ${
                   isBoss
-<<<<<<< HEAD
                     ? isProgressionLocked
                       ? 'col-span-1 md:col-span-2 lg:col-span-3 bg-[#0d0714] border-2 border-rose-950/60 opacity-80'
                       : 'col-span-1 md:col-span-2 lg:col-span-3 bg-gradient-to-r from-[#1c0817] via-[#100718] to-[#1c0817] border-2 border-rose-500/80 shadow-2xl shadow-rose-950/50'
@@ -247,11 +239,6 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                     ? 'bg-[#0b1120] border border-emerald-800/70 hover:border-emerald-600'
                     : isProgressionLocked
                     ? 'bg-[#070b14] border border-slate-900 opacity-60'
-=======
-                    ? 'col-span-1 md:col-span-2 lg:col-span-3 bg-gradient-to-r from-[#1c0817] via-[#100718] to-[#1c0817] border-2 border-rose-500/80 shadow-2xl shadow-rose-950/50'
-                    : isCompleted
-                    ? 'bg-[#0b1120] border border-emerald-800/70 hover:border-emerald-600'
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
                     : isLockedPro
                     ? 'bg-[#0b1120] border border-amber-900/50 opacity-90'
                     : 'bg-[#0b1120] border border-slate-800 hover:border-sky-500/50'
@@ -259,13 +246,9 @@ export const QuestMap: React.FC<QuestMapProps> = ({
               >
                 {/* Card Header Banner */}
                 <div className={`p-4 border-b flex items-start justify-between ${
-<<<<<<< HEAD
                   isBoss 
                     ? isProgressionLocked ? 'bg-rose-950/20 border-rose-950' : 'bg-rose-950/40 border-rose-900/60' 
                     : isProgressionLocked ? 'bg-slate-950/90 border-slate-900' : 'bg-slate-900/80 border-slate-800'
-=======
-                  isBoss ? 'bg-rose-950/40 border-rose-900/60' : 'bg-slate-900/80 border-slate-800'
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
                 }`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${
@@ -299,14 +282,11 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                       <CheckCircle2 className="w-3 h-3" />
                       <span>{isBoss ? '👑 DEFEATED' : 'SOLVED'}</span>
                     </span>
-<<<<<<< HEAD
                   ) : isProgressionLocked ? (
                     <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
                       <Lock className="w-2.5 h-2.5" />
                       <span>LOCKED</span>
                     </span>
-=======
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
                   ) : isBoss ? (
                     <span className="text-[10px] font-mono font-bold text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded border border-rose-600/60 animate-pulse">
                       BOSS FIGHT
@@ -348,7 +328,6 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                     </div>
                   )}
 
-<<<<<<< HEAD
                   {isBoss && isProgressionLocked && (
                     <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-900/60 text-xs text-rose-300 flex items-center gap-2.5">
                       <Lock className="w-4 h-4 text-rose-400 shrink-0" />
@@ -365,8 +344,6 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                     </div>
                   )}
 
-=======
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
                   <p className={`leading-relaxed line-clamp-2 ${isBoss ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
                     {quest.description}
                   </p>
@@ -378,13 +355,8 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                       {isBoss ? 'Combat Objectives:' : 'Objectives:'}
                     </div>
                     <ul className={`list-disc list-inside space-y-0.5 ${isBoss ? 'text-slate-300' : 'text-slate-400'}`}>
-<<<<<<< HEAD
                       {quest.objectives.slice(0, isBoss ? 3 : 2).map((o, objIdx) => (
                         <li key={objIdx} className="truncate">{o}</li>
-=======
-                      {quest.objectives.slice(0, isBoss ? 3 : 2).map((o, idx) => (
-                        <li key={idx} className="truncate">{o}</li>
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
                       ))}
                     </ul>
                   </div>
@@ -401,7 +373,6 @@ export const QuestMap: React.FC<QuestMapProps> = ({
 
                 {/* Card Footer Action */}
                 <div className={`p-4 border-t ${isBoss ? 'bg-black/60 border-rose-950' : 'bg-slate-950/60 border-slate-900'}`}>
-<<<<<<< HEAD
                   {isProgressionLocked ? (
                     <button
                       type="button"
@@ -416,9 +387,6 @@ export const QuestMap: React.FC<QuestMapProps> = ({
                       </span>
                     </button>
                   ) : isLockedPro ? (
-=======
-                  {isLockedPro ? (
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
                     <button
                       type="button"
                       onClick={onOpenPassModal}

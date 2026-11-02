@@ -22,10 +22,7 @@ import { SupabaseStore } from './lib/supabase';
 import { retentionService } from './lib/retentionService';
 import { academyService } from './lib/academyService';
 import { telegramAuth } from './lib/telegramAuth';
-<<<<<<< HEAD
 import { QUESTS } from './data/quests';
-=======
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
 import { Profile, UserProgress, UserRole } from './types';
 
 export default function App() {
@@ -190,7 +187,6 @@ export default function App() {
   };
 
   const handleSelectQuest = (questId: string) => {
-<<<<<<< HEAD
     const idx = QUESTS.findIndex((q) => q.id === questId);
     if (idx > 0 && profile.role === 'student') {
       const isBoss = Boolean(QUESTS[idx]?.is_boss);
@@ -215,8 +211,6 @@ export default function App() {
         }
       }
     }
-=======
->>>>>>> 9ff66a72d6618209fddfea5cd16b800fe285ce04
     setActiveQuestId(questId);
     setCurrentView('workspace');
   };
