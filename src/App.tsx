@@ -10,6 +10,7 @@ import LeaderboardModal from './components/LeaderboardModal';
 import DailyQuestsModal from './components/DailyQuestsModal';
 import CreditsModal from './components/CreditsModal';
 import TelegramAuthModal from './components/TelegramAuthModal';
+import { TelegramGateModal } from './components/TelegramGateModal';
 import SadisticGameMasterBubble from './components/SadisticGameMasterBubble';
 import { WifiOff, AlertTriangle, ShieldCheck, X, GraduationCap } from 'lucide-react';
 import ArcadePage from './pages/ArcadePage';
@@ -51,6 +52,7 @@ export default function App() {
   const [isDailyQuestsModalOpen, setIsDailyQuestsModalOpen] = useState(false);
   const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [isTelegramGateOpen, setIsTelegramGateOpen] = useState(() => !telegramAuth.hasActiveSession());
   const [streakProtectedBanner, setStreakProtectedBanner] = useState<string | null>(null);
   const [allianceUnlockedBanner, setAllianceUnlockedBanner] = useState<string | null>(null);
   const [gmNotification, setGmNotification] = useState<{ title: string; message: string } | null>(null);
@@ -73,11 +75,16 @@ export default function App() {
     return () => window.removeEventListener('sovereign_gm_notification', handleGmNotification);
   }, []);
 
-  // Automatically detect Telegram WebApp user session if running inside Telegram
+  // Enforce Telegram auth: automatically detect Telegram WebApp user session if running inside Telegram
   useEffect(() => {
     const tgSession = telegramAuth.detectTelegramWebApp();
     if (tgSession) {
       setProfile(SupabaseStore.getProfile());
+      setIsTelegramGateOpen(false);
+    } else if (telegramAuth.hasActiveSession()) {
+      setIsTelegramGateOpen(false);
+    } else {
+      setIsTelegramGateOpen(true);
     }
   }, []);
 
@@ -412,10 +419,24 @@ export default function App() {
         isOpen={isTelegramModalOpen}
         onClose={() => setIsTelegramModalOpen(false)}
         profile={profile}
-        onProfileUpdated={(updated) => setProfile(updated)}
+        onProfileUpdated={(updated) => {
+          setProfile(updated);
+          if (!telegramAuth.hasActiveSession()) {
+            setIsTelegramGateOpen(true);
+          }
+        }}
         onNavigateToAcademySignup={() => {
           setIsTelegramModalOpen(false);
           setCurrentView('academy-signup');
+        }}
+      />
+
+      {/* Mandatory Telegram Gate: New players cannot start playing until connected via Telegram */}
+      <TelegramGateModal
+        isOpen={isTelegramGateOpen}
+        onAuthenticated={(updatedProfile) => {
+          setProfile(updatedProfile);
+          setIsTelegramGateOpen(false);
         }}
       />
 

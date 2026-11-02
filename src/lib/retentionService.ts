@@ -92,7 +92,7 @@ const DEFAULT_QUESTS: DailyQuest[] = [
 const DEFAULT_FRIENDS_BOARD: FriendLeaderboardEntry[] = [
   { rank: 1, userId: 'u1', username: 'AdaLovelace', points: 3840, challengesSolved: 38, lastActive: '10m ago', isFriend: true, friendship_id: 'fr_1' },
   { rank: 2, userId: 'u2', username: 'AlanTuring', points: 3120, challengesSolved: 31, lastActive: '1h ago', isFriend: true, friendship_id: 'fr_2' },
-  { rank: 3, userId: 'me', username: 'QuantumCadet', points: 2890, challengesSolved: 28, lastActive: 'Active now', isFriend: false, friendship_id: 'fr_me' },
+  { rank: 3, userId: 'u4', username: 'ClaudeShannon', points: 2890, challengesSolved: 28, lastActive: 'Active now', isFriend: true, friendship_id: 'fr_4' },
   { rank: 4, userId: 'u3', username: 'MargaretHamilton', points: 2450, challengesSolved: 24, lastActive: '3h ago', isFriend: true, friendship_id: 'fr_3' },
 ];
 

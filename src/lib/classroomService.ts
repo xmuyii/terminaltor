@@ -71,7 +71,7 @@ const DEFAULT_COHORT: Cohort & { role: 'student' | 'teacher' } = {
 const DEFAULT_MEMBERS: CohortMember[] = [
   { id: 'cm_1', cohort_id: 'cohort_1', user_id: 'u_1', username: 'AdaLovelace', role: 'student', xp: 1850, streak: 12, last_active: '15m ago' },
   { id: 'cm_2', cohort_id: 'cohort_1', user_id: 'u_2', username: 'AlanTuring', role: 'student', xp: 1720, streak: 9, last_active: '1h ago' },
-  { id: 'cm_3', cohort_id: 'cohort_1', user_id: 'me', username: 'QuantumCadet', role: 'student', xp: 1250, streak: 7, last_active: 'Active now' },
+  { id: 'cm_3', cohort_id: 'cohort_1', user_id: 'me', username: 'GraceHopper', role: 'student', xp: 1250, streak: 7, last_active: 'Active now' },
 ];
 
 const DEFAULT_ASSIGNMENTS: Assignment[] = [
@@ -84,7 +84,7 @@ const DEFAULT_GRADEBOOK: { assignments: Assignment[]; rows: GradebookRow[] } = {
   rows: [
     { user_id: 'u_1', username: 'AdaLovelace', total_xp: 1850, streak: 12, assignments: { as_1: { status: 'passed', score: 100 }, as_2: { status: 'passed', score: 95 } }, progress: 100 },
     { user_id: 'u_2', username: 'AlanTuring', total_xp: 1720, streak: 9, assignments: { as_1: { status: 'passed', score: 100 }, as_2: { status: 'passed', score: 90 } }, progress: 95 },
-    { user_id: 'me', username: 'QuantumCadet', total_xp: 1250, streak: 7, assignments: { as_1: { status: 'passed', score: 100 }, as_2: { status: 'submitted', score: 85 } }, progress: 90 },
+    { user_id: 'me', username: 'GraceHopper', total_xp: 1250, streak: 7, assignments: { as_1: { status: 'passed', score: 100 }, as_2: { status: 'submitted', score: 85 } }, progress: 90 },
   ],
 };
 
@@ -93,7 +93,7 @@ const DEFAULT_HINT_ACTIVITY: CohortHintActivity = {
   active_students: 8,
   hints_by_level: { 1: 8, 2: 4, 3: 2 },
   stuck_students: [
-    { student_name: 'QuantumCadet', quest_id: 'quest-2', hints_used: 2 },
+    { student_name: 'GraceHopper', quest_id: 'quest-2', hints_used: 2 },
     { student_name: 'AlanTuring', quest_id: 'quest-3', hints_used: 1 },
   ],
 };
@@ -171,6 +171,6 @@ export class ClassroomService {
   }
 
   static exportGradebookCSV(cohortId: string, userId: string): string {
-    return `Student,Total XP,Streak,Progress\nAdaLovelace,1850,12,100%\nAlanTuring,1720,9,95%\nQuantumCadet,1250,7,90%\n`;
+    return `Student,Total XP,Streak,Progress\nAdaLovelace,1850,12,100%\nAlanTuring,1720,9,95%\nGraceHopper,1250,7,90%\n`;
   }
 }

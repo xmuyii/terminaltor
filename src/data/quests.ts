@@ -4,31 +4,31 @@ export const QUESTS: Quest[] = [
   {
     id: 'quest-1',
     level: 1,
-    title: 'Variables & Ifá Logic',
-    subtitle: 'Binary patterns, conditional wisdom, and gate activation',
+    title: 'Variables & Terminaltor Core',
+    subtitle: 'Binary firewall signals, conditional gating, and defense bypass',
     category: 'Fundamentals',
     xp_reward: 100,
-    badge_title: 'Binary Oracle',
+    badge_title: 'Core Breaker',
     badge_icon: 'Zap',
     is_pro: false,
-    lore: 'Deep inside the digital sanctuary of the Sovereign Elders, binary patterns (0 and 1) mirror ancient Ifá computational lore. The Temple Portal only unlocks when the binary oracle registers the exact sacred combination: signal_a active (1) and signal_b dormant (0).',
+    lore: 'Deep inside the mainframe of the Terminaltor, binary patterns (0 and 1) guard the neural core. The Terminaltor firewall gate only unlocks when the cadet registers the exact bypass signal: signal_a active (1) and signal_b dormant (0).',
     description: 'Learn how to declare variables and evaluate Boolean conditions using if/else branching in Python.',
     objectives: [
       'Create a variable named signal_a and set it to 1.',
       'Create a variable named signal_b and set it to 0.',
-      'Write an if statement: if signal_a is 1 and signal_b is 0, print "Sanctuary Gate Open".',
+      'Write an if statement: if signal_a is 1 and signal_b is 0, print "Terminaltor Gate Open".',
       'Otherwise in the else block, print "Access Denied".'
     ],
-    starter_code: `# Level 1: Variables & Ifá Logic
-# Task: Declare the binary signals and evaluate the sanctuary condition
+    starter_code: `# Level 1: Variables & Terminaltor Core
+# Task: Declare the binary signals and evaluate the Terminaltor firewall bypass condition
 
 # 1. Declare the variables
 signal_a = 1
 signal_b = 0
 
-# 2. Check the condition and print the sanctuary status
+# 2. Check the condition and print the firewall status
 if signal_a == 1 and signal_b == 0:
-    print("Sanctuary Gate Open")
+    print("Terminaltor Gate Open")
 else:
     print("Access Denied")
 `,
@@ -36,7 +36,7 @@ else:
 signal_b = 0
 
 if signal_a == 1 and signal_b == 0:
-    print("Sanctuary Gate Open")
+    print("Terminaltor Gate Open")
 else:
     print("Access Denied")
 `,
@@ -48,9 +48,9 @@ else:
     test_cases: [
       {
         id: 'tc-1-1',
-        title: 'Oracle Gate Status Check',
-        description: 'Verify standard output outputs the sacred unlocked message.',
-        expected_output: 'Sanctuary Gate Open',
+        title: 'Terminaltor Gate Status Check',
+        description: 'Verify standard output outputs the firewall breach message.',
+        expected_output: 'Terminaltor Gate Open',
         assertion_code: `assert 'signal_a' in globals(), "Variable signal_a is not defined"
 assert 'signal_b' in globals(), "Variable signal_b is not defined"
 assert signal_a == 1, "signal_a must equal 1"

@@ -31,9 +31,15 @@ export const ArcadePage: React.FC<ArcadePageProps> = ({ currentProfile, onBackTo
   const [selectedMode, setSelectedMode] = useState<'wordforge' | 'debugshunting'>('wordforge');
   const [roomCode, setRoomCode] = useState<string>('ARENA-FORGE-1');
   const [customRoomInput, setCustomRoomInput] = useState<string>('ARENA-FORGE-1');
-  const [playerName, setPlayerName] = useState<string>(() => currentProfile?.username || 'QuantumCadet');
+  const [playerName, setPlayerName] = useState<string>(() => currentProfile?.username || 'SoloCadet');
   const [inRoom, setInRoom] = useState<boolean>(false);
   const [showLeaveModal, setShowLeaveModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (currentProfile?.username) {
+      setPlayerName(currentProfile.username);
+    }
+  }, [currentProfile?.username]);
 
   // Tactical Base, Store & Playstyle Badges Modals
   const [showPlaystyleModal, setShowPlaystyleModal] = useState<boolean>(false);
@@ -504,17 +510,13 @@ export const ArcadePage: React.FC<ArcadePageProps> = ({ currentProfile, onBackTo
                 </div>
               </div>
 
-              {/* Player Username Display */}
+              {/* Player Username Display (Permanently locked to Telegram Identity) */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                <span className="text-slate-600">Playing as:</span>
-                <input
-                  type="text"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  className={`font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-right font-mono focus:outline-none ${
-                    selectedMode === 'debugshunting' ? 'focus:border-orange-500' : 'focus:border-emerald-500'
-                  }`}
-                />
+                <span className="text-slate-600 font-medium">Telegram Callsign:</span>
+                <span className="font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-right font-mono flex items-center gap-1.5 shadow-xs">
+                  <span className="text-sky-500">✈️</span>
+                  <span>{currentProfile?.username || playerName}</span>
+                </span>
               </div>
 
               {/* Main 1-Click Action */}

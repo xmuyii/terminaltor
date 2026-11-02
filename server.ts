@@ -1222,6 +1222,43 @@ app.post('/api/v1/comeback/run-check', (req: Request, res: Response) => {
   return res.json({ action: 'active', dispatched: false });
 });
 
+// POST /api/v1/telegram/create-invoice (Telegram Stars XTR invoice generation)
+app.post('/api/v1/telegram/create-invoice', async (req: Request, res: Response) => {
+  const { title = 'Arcade Credits', description = 'TERMINALTOR Credits', payload = `stars_${Date.now()}`, stars_amount = 70 } = req.body || {};
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+  if (botToken) {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/createInvoiceLink`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          payload,
+          currency: 'XTR',
+          prices: [{ label: title, amount: Number(stars_amount) || 70 }],
+        }),
+      });
+      const data = await response.json();
+      if (data?.ok && data?.result) {
+        return res.json({ success: true, invoiceLink: data.result });
+      }
+      console.warn('Telegram Bot API returned:', data);
+    } catch (err) {
+      console.warn('Failed contacting Telegram Bot API for invoice:', err);
+    }
+  }
+
+  // Fallback for development/preview without TELEGRAM_BOT_TOKEN
+  return res.json({
+    success: true,
+    isSimulated: true,
+    invoiceLink: null,
+    message: 'Invoice simulated (TELEGRAM_BOT_TOKEN pending configuration in environment)',
+  });
+});
+
 // Webhook simulation endpoints
 app.post('/api/webhooks/paystack', (req: Request, res: Response) => {
   return res.json({ success: true, message: 'Paystack webhook received and verified.' });

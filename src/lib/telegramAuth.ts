@@ -32,14 +32,21 @@ class TelegramAuthService {
     return null;
   }
 
+  hasActiveSession(): boolean {
+    return !!this.getSession();
+  }
+
   setSession(data: TelegramUserData): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEY_TG, JSON.stringify(data));
+    const tgUsername = data.username ? (data.username.startsWith('@') ? data.username : `@${data.username}`) : (data.first_name || 'Cadet');
     SupabaseStore.updateProfile({
       id: data.id,
-      username: data.username || data.first_name || 'CyberExplorer',
+      username: tgUsername,
       avatar_url: data.photo_url || '',
       role: data.role || 'student',
+      academy_id: undefined,
+      academy_name: 'Solo Developer',
     });
   }
 
@@ -57,11 +64,12 @@ class TelegramAuthService {
     const win = window as any;
     if (win.Telegram?.WebApp?.initDataUnsafe?.user) {
       const tgUser = win.Telegram.WebApp.initDataUnsafe.user;
+      const handle = tgUser.username ? `@${tgUser.username.replace('@', '')}` : (tgUser.first_name || 'Cadet');
       const session: TelegramUserData = {
         id: String(tgUser.id),
         first_name: tgUser.first_name,
         last_name: tgUser.last_name,
-        username: tgUser.username || tgUser.first_name || 'TelegramUser',
+        username: handle,
         language_code: tgUser.language_code,
         photo_url: tgUser.photo_url,
         role: 'student',
@@ -74,11 +82,12 @@ class TelegramAuthService {
   }
 
   signInWithTelegram(handle: string): TelegramUserData {
-    const clean = handle.replace('@', '').trim();
+    const raw = handle.replace('@', '').trim();
+    const clean = raw || 'Cadet';
     const session: TelegramUserData = {
-      id: `tg_${Date.now()}`,
+      id: `tg_${clean.toLowerCase()}`,
       first_name: clean,
-      username: clean,
+      username: `@${clean}`,
       role: 'student',
       is_webapp: false,
       auth_date: Math.floor(Date.now() / 1000),

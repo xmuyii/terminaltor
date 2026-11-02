@@ -70,7 +70,6 @@ export const DEFAULT_ACADEMY: AcademyRecord = {
 export const DEFAULT_MEMBERS: AcademyMemberRecord[] = [
   { id: 'm1', userId: 'u_ada', user_id: 'u_ada', username: 'AdaLovelace', role: 'leader', points: 3840, xp_points: 3840, challenges_solved: 38, last_active: '15m ago', joined_at: 'Jan 2026' },
   { id: 'm2', userId: 'u_alan', user_id: 'u_alan', username: 'AlanTuring', role: 'officer', points: 3120, xp_points: 3120, challenges_solved: 31, last_active: '1h ago', joined_at: 'Feb 2026' },
-  { id: 'm3', userId: 'me', user_id: 'me', username: 'QuantumCadet', role: 'cadet', points: 2890, xp_points: 2890, challenges_solved: 28, last_active: 'Active now', joined_at: 'Mar 2026' },
   { id: 'm4', userId: 'u_margaret', user_id: 'u_margaret', username: 'MargaretHamilton', role: 'officer', points: 2450, xp_points: 2450, challenges_solved: 24, last_active: 'Yesterday', joined_at: 'Feb 2026' },
 ];
 
@@ -98,11 +97,25 @@ class AcademyService {
   }
 
   async getEffectiveTier(userId: string, hasProPass: boolean): Promise<{ source: 'academy' | 'individual' | 'free'; tier: 'premium' | 'pro' | 'free'; academyName?: string }> {
-    return {
-      source: 'academy',
-      tier: 'premium',
-      academyName: DEFAULT_ACADEMY.name,
-    };
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('sovereign_my_academy');
+      if (stored) {
+        try {
+          const acad = JSON.parse(stored);
+          if (acad && acad.id) {
+            return {
+              source: 'academy',
+              tier: acad.tier || 'premium',
+              academyName: acad.name,
+            };
+          }
+        } catch {}
+      }
+    }
+    if (hasProPass) {
+      return { source: 'individual', tier: 'pro' };
+    }
+    return { source: 'free', tier: 'free' };
   }
 
   async getAcademy(id?: string): Promise<AcademyRecord> {
@@ -130,7 +143,18 @@ class AcademyService {
   }
 
   async getMyEnrolledAcademy(userId?: string): Promise<{ academy: AcademyRecord } | null> {
-    return { academy: DEFAULT_ACADEMY };
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('sovereign_my_academy');
+      if (stored) {
+        try {
+          const acad = JSON.parse(stored);
+          if (acad && acad.id) {
+            return { academy: acad };
+          }
+        } catch {}
+      }
+    }
+    return null;
   }
 
   async getAcademyByJoinCode(code: string): Promise<AcademyRecord | null> {

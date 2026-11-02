@@ -28,7 +28,7 @@ const SAMPLE_STUDENTS = [
   { id: '1', username: 'Ada_Lovelace_01', xp: 950, completed: 5, pass: true, lastActive: '10m ago' },
   { id: '2', username: 'Turing_Enigma_42', xp: 600, completed: 3, pass: false, lastActive: '1h ago' },
   { id: '3', username: 'Babbage_Cog_99', xp: 250, completed: 2, pass: false, lastActive: '3h ago' },
-  { id: '4', username: 'CyberOracle_Ifa', xp: 1100, completed: 5, pass: true, lastActive: 'Just now' },
+  { id: '4', username: 'CyberCadet_T800', xp: 1100, completed: 5, pass: true, lastActive: 'Just now' },
   { id: '5', username: 'Matrix_Neo_7', xp: 450, completed: 2, pass: false, lastActive: 'Yesterday' },
 ];
 

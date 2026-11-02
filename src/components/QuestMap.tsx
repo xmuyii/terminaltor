@@ -126,7 +126,7 @@ export const QuestMap: React.FC<QuestMapProps> = ({
           <div className="lg:col-span-4 flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-sky-500/10 border-2 border-sky-400/40 p-1 shrink-0 overflow-hidden">
               <img
-                src={profile.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=QuantumCadet'}
+                src={profile.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(profile.username || 'SoloCadet')}`}
                 alt={profile.username}
                 className="w-full h-full object-cover"
               />

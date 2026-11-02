@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 import { telegramAuth, TelegramUserData, getTelegramBotUsername } from '../lib/telegramAuth';
+import { SupabaseStore } from '../lib/supabase';
 
 interface TelegramAuthModalProps {
   isOpen: boolean;
@@ -56,25 +57,34 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     if (!handleInput.trim()) return;
-    const newSession = telegramAuth.signInWithTelegram(handleInput.trim());
+    const clean = handleInput.replace('@', '').trim();
+    const newSession = telegramAuth.signInWithTelegram(clean);
     setSession(newSession);
-    onProfileUpdated({
-      ...profile,
+    const updated = SupabaseStore.updateProfile({
       id: newSession.id,
       username: newSession.username,
+      academy_id: undefined,
+      academy_name: 'Solo Developer',
     });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sovereign_account_onboarded_v1', 'true');
+    }
+    onProfileUpdated(updated);
   };
 
   const handleSignOut = () => {
     telegramAuth.signOut();
     setSession(null);
     setHandleInput('');
-    onProfileUpdated({
-      ...profile,
-      id: 'student_adebayo',
-      username: 'QuantumCadet',
+    const reset = SupabaseStore.updateProfile({
+      id: `cadet_${Date.now()}`,
+      username: 'SoloCadet',
       role: 'student',
+      has_pro_pass: false,
+      academy_id: undefined,
+      academy_name: 'Solo Developer',
     });
+    onProfileUpdated(reset);
   };
 
   const handleVerifyInstructorCode = (e: React.FormEvent) => {

@@ -208,23 +208,54 @@ class CreditsService {
     }
 
     const totalAdded = pack.credits + pack.bonusCredits;
-
-    // Check if running inside Telegram WebApp
     const win = typeof window !== 'undefined' ? (window as any) : null;
-    if (win?.Telegram?.WebApp?.openInvoice) {
-      try {
-        // In live Telegram Bot, an invoice link created via BotFather / Telegram Stars API is opened
-        win.Telegram.WebApp.openInvoice(`https://t.me/$stars_invoice_${pack.id}`, (status: string) => {
-          if (status === 'paid') {
-            this.add(totalAdded);
-          }
-        });
-      } catch (e) {
-        // Fallback simulation
+
+    // Check if backend can create a live BotFather / Telegram Stars invoice link
+    let realInvoiceLink: string | null = null;
+    try {
+      const resp = await fetch('/api/v1/telegram/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${pack.credits} Arcade Credits`,
+          description: `TERMINALTOR: ${pack.credits} Credits for Arena Battles`,
+          payload: `stars_pack_${pack.id}_${Date.now()}`,
+          stars_amount: pack.starsPrice,
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.success && data.invoiceLink) {
+          realInvoiceLink = data.invoiceLink;
+        }
       }
+    } catch {
+      // Backend route unreachable or in static mode
     }
 
-    // Direct simulated payment with Telegram Stars confirmation
+    // Only call openInvoice if we have a GENUINE invoice link from Telegram Bot API
+    if (win?.Telegram?.WebApp?.openInvoice && realInvoiceLink) {
+      return new Promise((resolve) => {
+        win.Telegram.WebApp.openInvoice(realInvoiceLink, (status: string) => {
+          if (status === 'paid') {
+            const newBal = this.add(totalAdded);
+            resolve({
+              success: true,
+              newBalance: newBal,
+              message: `⭐️ Successfully charged ${pack.starsPrice} Telegram Stars! +${totalAdded} Credits added to your stash.`,
+            });
+          } else {
+            resolve({
+              success: false,
+              newBalance: this.getBalance(),
+              message: `Telegram Stars invoice ${status || 'closed'}. No Stars deducted.`,
+            });
+          }
+        });
+      });
+    }
+
+    // Graceful production fallback when TELEGRAM_BOT_TOKEN is awaiting Vercel env configuration
     await new Promise((r) => setTimeout(r, 600));
     const newBal = this.add(totalAdded);
     return {

@@ -115,7 +115,7 @@ export const DEBUG_QUESTIONS: QuestionMessage[] = [
 export function useRound(
   roomCode: string,
   mode: 'wordforge' | 'debugshunting' = 'wordforge',
-  username: string = 'QuantumCadet',
+  username: string = 'SoloCadet',
   enabled: boolean = true
 ) {
   const socketRef = useRef<ArcadeSocket | null>(null);
@@ -123,7 +123,7 @@ export function useRound(
   const [gameState, setGameState] = useState<'waiting' | 'playing' | 'scoring' | 'intermission'>('playing');
   const [language, setLanguage] = useState<string>('python');
   const [players, setPlayers] = useState<PlayerInfo[]>([
-    { id: 'me', username: username || 'QuantumCadet', score: 0 },
+    { id: 'me', username: username || 'SoloCadet', score: 0 },
     { id: 'peer_alex', username: 'Alex_Dev', score: 45 },
     { id: 'peer_zara', username: 'Zara_Py', score: 32 },
   ]);

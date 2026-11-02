@@ -7,19 +7,19 @@ const STORAGE_KEY_PROGRESS = 'sovereign_progress_v1';
 const STORAGE_KEY_CODE = 'sovereign_saved_code_v1';
 
 const DEFAULT_PROFILE: Profile = {
-  id: 'student_demo',
-  username: 'QuantumCadet',
+  id: 'cadet_init',
+  username: 'SoloCadet',
   avatar_url: '',
   role: 'student' as UserRole,
-  level: 5,
-  points: 1250,
-  xp_points: 1250,
-  streak_days: 7,
-  has_pro_pass: true,
-  credits: 250,
+  level: 1,
+  points: 0,
+  xp_points: 0,
+  streak_days: 1,
+  has_pro_pass: false,
+  credits: 150,
   created_at: '2026-01-01T00:00:00Z',
-  academy_id: 'acad_lagos_high',
-  academy_name: 'Lagos Tech High',
+  academy_id: undefined,
+  academy_name: 'Solo Developer',
 };
 
 class SupabaseStoreImpl {
@@ -31,7 +31,24 @@ class SupabaseStoreImpl {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_PROFILE);
       if (stored) {
-        return { ...DEFAULT_PROFILE, ...JSON.parse(stored) };
+        const parsed = JSON.parse(stored);
+        // Sanitize legacy demo profile values from development
+        if (parsed.username === 'QuantumCadet' || parsed.id === 'student_demo') {
+          parsed.username = 'SoloCadet';
+          parsed.id = `cadet_${Date.now()}`;
+          parsed.has_pro_pass = false;
+          try {
+            localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(parsed));
+          } catch {}
+        }
+        if (parsed.academy_id === 'acad_lagos_high') {
+          delete parsed.academy_id;
+          parsed.academy_name = 'Solo Developer';
+          try {
+            localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(parsed));
+          } catch {}
+        }
+        return { ...DEFAULT_PROFILE, ...parsed };
       }
     } catch (e) {
       console.warn('Failed reading profile from storage:', e);
