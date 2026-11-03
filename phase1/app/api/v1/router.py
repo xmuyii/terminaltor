@@ -180,8 +180,8 @@ async def verify_telegram_code(req: TelegramCodeVerify):
 
 @api_v1_router.post("/telegram/webhook", tags=["telegram"])
 async def telegram_webhook(update: dict):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    app_url = os.getenv("APP_URL", "https://terminaltor.vercel.app")
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN") or "8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8"
+    app_url = os.getenv("APP_URL") or "https://terminaltor-olive.vercel.app"
 
     # Handle pre_checkout_query
     if "pre_checkout_query" in update:
@@ -297,6 +297,72 @@ async def telegram_webhook(update: dict):
             pass
 
     return {"ok": True}
+
+
+@api_v1_router.get("/telegram/bot-status", tags=["telegram"])
+async def get_bot_status():
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    raw_bot = os.getenv("VITE_TELEGRAM_BOT_USERNAME", "Hqgamebot")
+    bot_username = raw_bot.lstrip("@").strip() or "Hqgamebot"
+    app_url = os.getenv("APP_URL", "https://terminaltor.vercel.app")
+
+    if not bot_token:
+        return {
+            "configured": False,
+            "botUsername": bot_username,
+            "message": f"TELEGRAM_BOT_TOKEN is not set in environment variables. Add TELEGRAM_BOT_TOKEN in Vercel to enable @{bot_username} replies.",
+            "whyBotDoesNotReply": "A Telegram bot does not send messages automatically. Telegram holds incoming messages until your server connects using your secret Bot Token.",
+        }
+
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            me_resp = await client.get(f"https://api.telegram.org/bot{bot_token}/getMe")
+            wh_resp = await client.get(f"https://api.telegram.org/bot{bot_token}/getWebhookInfo")
+            return {
+                "configured": True,
+                "bot": me_resp.json().get("result"),
+                "webhook": wh_resp.json().get("result"),
+                "appUrl": app_url,
+            }
+    except Exception as e:
+        return {"configured": True, "error": str(e)}
+
+
+@api_v1_router.get("/telegram/setup-webhook", tags=["telegram"])
+async def setup_webhook(token: str = "", url: str = ""):
+    bot_token = token or os.getenv("TELEGRAM_BOT_TOKEN")
+    app_url = (url or os.getenv("APP_URL", "https://terminaltor.vercel.app")).rstrip("/")
+
+    if not bot_token:
+        return {"success": False, "error": "token_required", "message": "Provide ?token=YOUR_BOT_TOKEN"}
+
+    try:
+        import httpx
+        webhook_url = f"{app_url}/api/v1/telegram/webhook"
+        async with httpx.AsyncClient() as client:
+            wh_resp = await client.post(
+                f"https://api.telegram.org/bot{bot_token}/setWebhook",
+                params={"url": webhook_url},
+            )
+            mb_resp = await client.post(
+                f"https://api.telegram.org/bot{bot_token}/setChatMenuButton",
+                json={
+                    "menu_button": {
+                        "type": "web_app",
+                        "text": "Play TERMINALTOR 🎮",
+                        "web_app": {"url": app_url},
+                    }
+                },
+            )
+            return {
+                "success": True,
+                "webhookConfigured": wh_resp.json().get("ok"),
+                "menuButtonConfigured": mb_resp.json().get("ok"),
+                "message": "Telegram Bot successfully linked!",
+            }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 api_v1_router.include_router(challenges_router)

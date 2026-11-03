@@ -1434,8 +1434,8 @@ app.post('/api/v1/auth/telegram/verify-code', (req: Request, res: Response) => {
 });
 
 async function handleTelegramUpdate(update: any, botToken?: string, appUrl?: string) {
-  const effectiveBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN;
-  const effectiveAppUrl = appUrl || process.env.APP_URL || 'https://terminaltor.vercel.app';
+  const effectiveBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN || '8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8';
+  const effectiveAppUrl = appUrl || process.env.APP_URL || 'https://terminaltor-olive.vercel.app';
 
   // 1. Handle pre_checkout_query (Telegram Stars payment confirmation)
   if (update.pre_checkout_query) {
@@ -1595,15 +1595,92 @@ app.post('/api/v1/telegram/webhook', async (req: Request, res: Response) => {
   return res.json(result);
 });
 
-// Automatic Telegram Bot Poller Daemon (Works in dev, railway, and servers without manual webhook)
-async function startTelegramPoller() {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (!botToken) {
-    console.log('[Telegram Bot] TELEGRAM_BOT_TOKEN not configured in environment. Bot auto-poller idle.');
-    return;
+// GET /api/v1/telegram/bot-status (Diagnostic endpoint to inspect Telegram Bot connection)
+app.get('/api/v1/telegram/bot-status', async (_req: Request, res: Response) => {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const rawBot = process.env.VITE_TELEGRAM_BOT_USERNAME || 'Hqgamebot';
+  const botUsername = rawBot.replace(/^@+/, '').trim() || 'Hqgamebot';
+  const appUrl = process.env.APP_URL || 'https://terminaltor.vercel.app';
+
+  if (!token) {
+    return res.json({
+      configured: false,
+      botUsername,
+      message: 'TELEGRAM_BOT_TOKEN is not set in environment variables. To make @' + botUsername + ' reply to /start, add TELEGRAM_BOT_TOKEN to your Vercel Environment Variables.',
+      whyBotDoesNotReply: 'A Telegram bot does not send messages automatically. Telegram holds incoming messages until your server connects using your secret Bot Token.',
+      quickFix: [
+        '1. Get your Bot Token from @BotFather in Telegram (it looks like 123456789:ABCdef...)',
+        '2. Add TELEGRAM_BOT_TOKEN in Vercel -> Project Settings -> Environment Variables',
+        '3. Visit: ' + appUrl + '/api/v1/telegram/setup-webhook?token=YOUR_BOT_TOKEN to link them instantly.',
+      ]
+    });
   }
 
-  const appUrl = process.env.APP_URL || 'https://terminaltor.vercel.app';
+  try {
+    const meResp = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const meData = await meResp.json();
+    const whResp = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const whData = await whResp.json();
+
+    return res.json({
+      configured: true,
+      bot: meData?.result,
+      webhook: whData?.result,
+      appUrl,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ configured: true, error: err.message });
+  }
+});
+
+// GET /api/v1/telegram/setup-webhook (1-Click setup to link Webhook & Menu Button)
+app.get('/api/v1/telegram/setup-webhook', async (req: Request, res: Response) => {
+  const token = ((req.query?.token as string) || process.env.TELEGRAM_BOT_TOKEN || '').trim();
+  const appUrl = ((req.query?.url as string) || process.env.APP_URL || 'https://terminaltor.vercel.app').replace(/\/+$/, '');
+
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      error: 'token_required',
+      message: 'Please provide ?token=YOUR_BOT_TOKEN or configure TELEGRAM_BOT_TOKEN in Vercel environment variables.',
+    });
+  }
+
+  try {
+    const webhookUrl = `${appUrl}/api/v1/telegram/webhook`;
+    const whResp = await fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+    const whData = await whResp.json();
+
+    const mbResp = await fetch(`https://api.telegram.org/bot${token}/setChatMenuButton`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_button: {
+          type: 'web_app',
+          text: 'Play TERMINALTOR 🎮',
+          web_app: { url: appUrl },
+        },
+      }),
+    });
+    const mbData = await mbResp.json();
+
+    return res.json({
+      success: true,
+      webhookConfigured: whData?.ok,
+      webhookResult: whData,
+      menuButtonConfigured: mbData?.ok,
+      menuButtonResult: mbData,
+      message: 'Telegram Bot successfully linked! @Hqgamebot will now auto-reply to /start and display the Play TERMINALTOR 🎮 button.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Automatic Telegram Bot Poller Daemon (Works in dev, railway, and servers without manual webhook)
+async function startTelegramPoller() {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN || '8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8';
+  const appUrl = process.env.APP_URL || 'https://terminaltor-olive.vercel.app';
 
   // Auto-configure Telegram Chat Menu Button so "Play TERMINALTOR" appears in the bot automatically
   try {
