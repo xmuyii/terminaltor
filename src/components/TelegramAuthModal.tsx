@@ -118,8 +118,8 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
   const isInstructor = profile.role === 'instructor' || profile.role === 'teacher';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#0b1329] border border-slate-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/80 backdrop-blur-sm flex min-h-full items-center justify-center p-3 sm:p-4">
+      <div className="bg-[#0b1329] border border-slate-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[92dvh] my-auto animate-in fade-in zoom-in-95">
         {/* Header */}
         <div className="p-6 bg-gradient-to-r from-sky-950/60 via-[#0b1329] to-indigo-950/40 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">

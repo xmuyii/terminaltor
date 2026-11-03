@@ -160,13 +160,13 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="relative w-full max-w-lg bg-[#070b14] border-2 border-emerald-500/50 rounded-3xl shadow-[0_0_60px_rgba(16,185,129,0.25)] overflow-hidden text-slate-100 font-sans">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain p-3 sm:p-6 flex min-h-full items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="relative w-full max-w-lg my-auto bg-[#070b14] border-2 border-emerald-500/50 rounded-3xl shadow-[0_0_60px_rgba(16,185,129,0.25)] max-h-[92dvh] flex flex-col text-slate-100 font-sans overflow-hidden">
         {/* Glow ambient background */}
         <div className="absolute top-0 right-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Banner */}
-        <div className="p-6 bg-gradient-to-r from-emerald-950/70 via-slate-900 to-[#070b14] border-b border-emerald-500/30 flex items-center gap-4">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-emerald-950/80 via-slate-900 to-[#070b14] border-b border-emerald-500/30 flex items-center gap-4 shrink-0">
           <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-emerald-500/30 shrink-0">
             <Lock className="w-6 h-6 stroke-[2.5]" />
           </div>
@@ -183,8 +183,8 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
           </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6 sm:p-7 space-y-6">
+        {/* Content Body - Fully scrollable on mobile and laptop */}
+        <div className="p-5 sm:p-7 space-y-5 overflow-y-auto overscroll-contain flex-1">
           {/* Mode 1: Detected inside Telegram WebApp */}
           {webAppUser ? (
             <div className="p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/50 space-y-4">

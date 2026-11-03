@@ -81,10 +81,10 @@ export const PassModal: React.FC<PassModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-[#0a0f1d] border-2 border-amber-500/50 rounded-3xl shadow-[0_0_50px_rgba(245,158,11,0.2)] overflow-hidden text-slate-100 font-sans">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain flex min-h-full items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg my-auto max-h-[92dvh] flex flex-col bg-[#0a0f1d] border-2 border-amber-500/50 rounded-3xl shadow-[0_0_50px_rgba(245,158,11,0.2)] overflow-hidden text-slate-100 font-sans">
         {/* Header Ribbon */}
-        <div className="p-6 bg-gradient-to-r from-amber-950/70 via-slate-900 to-[#0a0f1d] border-b border-amber-500/30 flex items-start justify-between">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-950/70 via-slate-900 to-[#0a0f1d] border-b border-amber-500/30 flex items-start justify-between shrink-0">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-amber-400/20 shrink-0">
               <Sparkles className="w-6 h-6 fill-slate-950" />
@@ -100,7 +100,7 @@ export const PassModal: React.FC<PassModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer shrink-0"
             aria-label="Close pass modal"
           >
             <X className="w-5 h-5" />
@@ -108,7 +108,7 @@ export const PassModal: React.FC<PassModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 sm:p-7 space-y-6 text-sm">
+        <div className="p-5 sm:p-7 space-y-5 text-sm overflow-y-auto overscroll-contain flex-1">
           <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
             Unlock advanced coding modules, capstone game projects, dedicated Pyodide execution threads, and verified digital certifications for young developers.
           </p>
