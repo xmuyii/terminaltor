@@ -1434,7 +1434,7 @@ app.post('/api/v1/auth/telegram/verify-code', (req: Request, res: Response) => {
 });
 
 async function handleTelegramUpdate(update: any, botToken?: string, appUrl?: string) {
-  const effectiveBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN || '8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8';
+  const effectiveBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN;
   const effectiveAppUrl = appUrl || process.env.APP_URL || 'https://terminaltor-olive.vercel.app';
 
   // 1. Handle pre_checkout_query (Telegram Stars payment confirmation)
