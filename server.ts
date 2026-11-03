@@ -1261,80 +1261,392 @@ app.post('/api/v1/telegram/create-invoice', async (req: Request, res: Response) 
 // In-memory pending Telegram authentications to prevent account spoofing
 interface PendingTgAuth {
   username: string;
-  code: string;
+  sessionToken: string;
+  code: string; // Secret OTP sent exclusively to user's Telegram DM
   createdAt: number;
+  verified: boolean;
+  mismatchedUser?: string;
+  tgId?: string;
+  firstName?: string;
 }
 const pendingTgVerifications = new Map<string, PendingTgAuth>();
 
+// POST /api/v1/auth/telegram/create-session (Zero-input cryptographic challenge)
+app.post('/api/v1/auth/telegram/create-session', (_req: Request, res: Response) => {
+  const sessionToken = 'sess_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  pendingTgVerifications.set(sessionToken, {
+    username: '', // Bound securely to the authentic Telegram user who taps /start
+    sessionToken,
+    code,
+    createdAt: Date.now(),
+    verified: false,
+  });
+
+  const rawBot = process.env.VITE_TELEGRAM_BOT_USERNAME || 'Hqgamebot';
+  const botUsername = rawBot.replace(/^@+/, '').trim() || 'Hqgamebot';
+
+  return res.json({
+    success: true,
+    sessionToken,
+    botUsername,
+    deepLink: `https://t.me/${botUsername}?start=auth_${sessionToken}`,
+    message: `Secure session challenge created. Tap below to verify with @${botUsername} in Telegram.`
+  });
+});
+
 // POST /api/v1/auth/telegram/request-code
 app.post('/api/v1/auth/telegram/request-code', (req: Request, res: Response) => {
-  const raw = ((req.body?.username || '') as string).replace('@', '').trim().toLowerCase();
+  const raw = ((req.body?.username || '') as string).replace(/^@+/, '').trim().toLowerCase();
   if (!raw || raw.length < 3) {
     return res.status(400).json({ success: false, message: 'Telegram username must be at least 3 characters.' });
   }
 
-  // Generate a cryptographically secure 6-digit confirmation pin
+  // Generate random session token and secret 6-digit confirmation pin
+  const sessionToken = Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  pendingTgVerifications.set(raw, {
+
+  pendingTgVerifications.set(sessionToken, {
     username: raw,
+    sessionToken,
     code,
     createdAt: Date.now(),
+    verified: false,
   });
 
-  const botUsername = process.env.VITE_TELEGRAM_BOT_USERNAME || 'TerminaltorBot';
+  const rawBot = process.env.VITE_TELEGRAM_BOT_USERNAME || 'Hqgamebot';
+  const botUsername = rawBot.replace(/^@+/, '').trim() || 'Hqgamebot';
+
+  // SECURITY: Do NOT return `code` to the HTTP caller!
+  // The code is sent exclusively to the user's authentic Telegram account.
   return res.json({
     success: true,
-    code,
+    sessionToken,
     username: `@${raw}`,
     botUsername,
-    deepLink: `https://t.me/${botUsername}?start=auth_${code}`,
-    message: `Verification code generated. Open @${botUsername} to confirm.`
+    deepLink: `https://t.me/${botUsername}?start=auth_${sessionToken}`,
+    message: `Verification challenge initiated for @${raw}. Open @${botUsername} in Telegram to verify.`
   });
+});
+
+// GET /api/v1/auth/telegram/check-status (polling for background Telegram bot confirmation)
+app.get('/api/v1/auth/telegram/check-status', (req: Request, res: Response) => {
+  const token = ((req.query?.sessionToken || req.query?.token || '') as string).trim();
+  const username = ((req.query?.username || '') as string).replace(/^@+/, '').trim().toLowerCase();
+
+  let record: PendingTgAuth | undefined;
+  if (token) {
+    record = pendingTgVerifications.get(token);
+  } else if (username) {
+    for (const val of pendingTgVerifications.values()) {
+      if (val.username === username) {
+        record = val;
+        break;
+      }
+    }
+  }
+
+  if (record) {
+    if (record.verified) {
+      return res.json({
+        success: true,
+        verified: true,
+        user: {
+          id: record.tgId || `tg_${record.username}`,
+          username: `@${record.username}`,
+          first_name: record.firstName || record.username,
+          auth_date: Math.floor(Date.now() / 1000),
+          is_webapp: false,
+        },
+      });
+    }
+
+    if (record.mismatchedUser) {
+      return res.json({
+        success: false,
+        verified: false,
+        mismatch: true,
+        message: `Account mismatch! The Telegram user who tapped the bot was @${record.mismatchedUser}, not @${record.username}.`,
+      });
+    }
+  }
+
+  return res.json({ success: true, verified: false });
 });
 
 // POST /api/v1/auth/telegram/verify-code
 app.post('/api/v1/auth/telegram/verify-code', (req: Request, res: Response) => {
-  const raw = ((req.body?.username || '') as string).replace('@', '').trim().toLowerCase();
+  const token = ((req.body?.sessionToken || req.body?.token || '') as string).trim();
+  const raw = ((req.body?.username || '') as string).replace(/^@+/, '').trim().toLowerCase();
   const inputCode = ((req.body?.code || '') as string).trim();
 
-  const record = pendingTgVerifications.get(raw);
+  let record: PendingTgAuth | undefined;
+  if (token) {
+    record = pendingTgVerifications.get(token);
+  } else if (raw) {
+    for (const val of pendingTgVerifications.values()) {
+      if (val.username === raw) {
+        record = val;
+        break;
+      }
+    }
+  }
+
   if (!record) {
     return res.status(400).json({
       success: false,
-      message: 'No pending verification request found for this account. Please request a new code.',
+      message: 'No pending verification challenge found. Please request a new verification code.',
     });
   }
 
   // Code expires after 15 minutes
   if (Date.now() - record.createdAt > 15 * 60 * 1000) {
-    pendingTgVerifications.delete(raw);
+    if (token) pendingTgVerifications.delete(token);
     return res.status(400).json({
       success: false,
-      message: 'Verification code has expired. Please request a new code.',
+      message: 'Verification challenge expired. Please request a new link.',
     });
   }
 
+  // Security check: Must match the secret code sent to Telegram
   if (record.code !== inputCode) {
     return res.status(400).json({
       success: false,
-      message: 'Incorrect verification code. Please enter the exact 6-digit code shown in your Telegram verification flow.',
+      message: 'Incorrect PIN. Please enter the 6-digit code received in your Telegram chat with the bot.',
     });
   }
 
   // Verified!
-  pendingTgVerifications.delete(raw);
+  record.verified = true;
+  if (token) pendingTgVerifications.delete(token);
   return res.json({
     success: true,
     verified: true,
     user: {
-      id: `tg_${raw}`,
-      username: `@${raw}`,
-      first_name: raw,
+      id: record.tgId || `tg_${record.username}`,
+      username: `@${record.username}`,
+      first_name: record.firstName || record.username,
       auth_date: Math.floor(Date.now() / 1000),
       is_webapp: false,
     },
   });
 });
+
+async function handleTelegramUpdate(update: any, botToken?: string, appUrl?: string) {
+  const effectiveBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN;
+  const effectiveAppUrl = appUrl || process.env.APP_URL || 'https://terminaltor.vercel.app';
+
+  // 1. Handle pre_checkout_query (Telegram Stars payment confirmation)
+  if (update.pre_checkout_query) {
+    const queryId = update.pre_checkout_query.id;
+    if (effectiveBotToken) {
+      try {
+        await fetch(`https://api.telegram.org/bot${effectiveBotToken}/answerPreCheckoutQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pre_checkout_query_id: queryId, ok: true }),
+        });
+      } catch (e) {
+        console.warn('Failed answering pre_checkout_query:', e);
+      }
+    }
+    return { ok: true };
+  }
+
+  // 2. Handle incoming bot messages
+  const message = update.message;
+  if (!message) {
+    return { ok: true };
+  }
+
+  const chatId = message.chat?.id;
+  const fromUser = message.from || {};
+  const actualTgUsername = (fromUser.username || '').toLowerCase();
+  const text = (message.text || '').trim();
+
+  // Handle /start auth_<sessionToken>
+  const authMatch = text.match(/^\/start\s+auth_([a-zA-Z0-9_-]+)/i);
+  if (authMatch) {
+    const sessionToken = authMatch[1];
+    let record = pendingTgVerifications.get(sessionToken);
+
+    // Fallback: search by username if sessionToken was code
+    if (!record) {
+      for (const val of pendingTgVerifications.values()) {
+        if (val.code === sessionToken || val.sessionToken === sessionToken) {
+          record = val;
+          break;
+        }
+      }
+    }
+
+    if (!record) {
+      if (effectiveBotToken && chatId) {
+        try {
+          await fetch(`https://api.telegram.org/bot${effectiveBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `⚠️ Verification link expired or not found.\n\nPlease return to TERMINALTOR and tap "Verify Telegram" again.`,
+            }),
+          });
+        } catch (e) {
+          // ignore
+        }
+      }
+      return { ok: true };
+    }
+
+    // If this was an open session challenge (zero-input), bind to the authentic sender:
+    if (!record.username) {
+      record.username = fromUser.username || fromUser.first_name || `cadet_${fromUser.id}`;
+    } else {
+      // CRITICAL SECURITY ENFORCEMENT for pre-specified handles:
+      const expectedUsername = record.username.toLowerCase();
+      const isOwner = actualTgUsername === expectedUsername || (!actualTgUsername && fromUser.first_name?.toLowerCase() === expectedUsername);
+
+      if (!isOwner) {
+        record.mismatchedUser = fromUser.username || fromUser.first_name || 'unknown';
+        if (effectiveBotToken && chatId) {
+          try {
+            await fetch(`https://api.telegram.org/bot${effectiveBotToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `⛔ ACCESS DENIED: Account Mismatch!\n\nYou are logged into Telegram as @${fromUser.username || fromUser.first_name}.\nYou cannot verify the account @${record.username}.\n\nTo play, enter your own Telegram username on the website.`,
+              }),
+            });
+          } catch (e) {
+            // ignore
+          }
+        }
+        return { ok: true, error: 'username_mismatch' };
+      }
+    }
+
+    // Verified! Mark record as authentic
+    record.verified = true;
+    record.tgId = String(fromUser.id);
+    record.firstName = fromUser.first_name || '';
+
+    if (effectiveBotToken && chatId) {
+      try {
+        await fetch(`https://api.telegram.org/bot${effectiveBotToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `⚡ ACCESS GRANTED, Cadet @${fromUser.username || fromUser.first_name}!\n\nYour Telegram identity is verified for TERMINALTOR.\n\n🔑 Your One-Time Security PIN: [ ${record.code} ]\n\nYour browser will auto-unlock, or tap below to play directly in Telegram:`,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: '🎮 Launch TERMINALTOR',
+                    web_app: { url: effectiveAppUrl }
+                  }
+                ]
+              ]
+            }
+          }),
+        });
+      } catch (e) {
+        console.warn('Failed sending bot reply:', e);
+      }
+    }
+
+    return { ok: true, verified: true };
+  }
+
+  // General /start or any text
+  if (effectiveBotToken && chatId) {
+    try {
+      await fetch(`https://api.telegram.org/bot${effectiveBotToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `⚡ TERMINALTOR: Python Logic Cyber Arena\n\nDeveloped by IRETE LABS, powered by Ose Engine.\n\nDefeat the ultimate mainframe boss in live combat. Tap below to launch:`,
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: '🎮 Play TERMINALTOR',
+                  web_app: { url: effectiveAppUrl }
+                }
+              ]
+            ]
+          }
+        }),
+      });
+    } catch (e) {
+      console.warn('Failed sending bot welcome:', e);
+    }
+  }
+
+  return { ok: true };
+}
+
+// POST /api/v1/telegram/webhook (Handles updates from Telegram BotFather webhook)
+app.post('/api/v1/telegram/webhook', async (req: Request, res: Response) => {
+  const result = await handleTelegramUpdate(req.body || {});
+  return res.json(result);
+});
+
+// Automatic Telegram Bot Poller Daemon (Works in dev, railway, and servers without manual webhook)
+async function startTelegramPoller() {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
+    console.log('[Telegram Bot] TELEGRAM_BOT_TOKEN not configured in environment. Bot auto-poller idle.');
+    return;
+  }
+
+  const appUrl = process.env.APP_URL || 'https://terminaltor.vercel.app';
+
+  // Auto-configure Telegram Chat Menu Button so "Play TERMINALTOR" appears in the bot automatically
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/setChatMenuButton`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_button: {
+          type: 'web_app',
+          text: 'Play TERMINALTOR 🎮',
+          web_app: { url: appUrl }
+        }
+      })
+    });
+    const d = await res.json();
+    console.log('[Telegram Bot] setChatMenuButton configured:', d?.ok);
+  } catch (err) {
+    console.warn('[Telegram Bot] setChatMenuButton error:', err);
+  }
+
+  let offset = 0;
+  console.log('[Telegram Bot] Poller active for @' + (process.env.VITE_TELEGRAM_BOT_USERNAME || 'Hqgamebot'));
+
+  const pollLoop = async () => {
+    try {
+      const resp = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?offset=${offset}&timeout=15`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.ok && Array.isArray(data.result)) {
+          for (const item of data.result) {
+            offset = Math.max(offset, item.update_id + 1);
+            await handleTelegramUpdate(item, botToken, appUrl);
+          }
+        }
+      }
+    } catch {
+      // transient timeout
+    }
+    setTimeout(pollLoop, 1500);
+  };
+
+  pollLoop();
+}
 
 // Webhook simulation endpoints
 app.post('/api/webhooks/paystack', (req: Request, res: Response) => {
@@ -1365,6 +1677,7 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on port ${PORT}`);
+    startTelegramPoller();
   });
 }
 

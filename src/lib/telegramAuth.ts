@@ -17,7 +17,9 @@ export interface TelegramUserData {
 const STORAGE_KEY_TG = 'sovereign_tg_session_v1';
 
 export const getTelegramBotUsername = (): string => {
-  return (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string) || 'TerminaltorBot';
+  const raw = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string) || 'Hqgamebot';
+  const clean = raw.replace(/^@+/, '').trim();
+  return clean || 'Hqgamebot';
 };
 
 class TelegramAuthService {
@@ -62,6 +64,15 @@ class TelegramAuthService {
   detectTelegramWebApp(): TelegramUserData | null {
     if (typeof window === 'undefined') return null;
     const win = window as any;
+    try {
+      if (win.Telegram?.WebApp) {
+        win.Telegram.WebApp.ready?.();
+        win.Telegram.WebApp.expand?.();
+      }
+    } catch (e) {
+      // ignore
+    }
+
     if (win.Telegram?.WebApp?.initDataUnsafe?.user) {
       const tgUser = win.Telegram.WebApp.initDataUnsafe.user;
       const handle = tgUser.username ? `@${tgUser.username.replace('@', '')}` : (tgUser.first_name || 'Cadet');
@@ -81,8 +92,32 @@ class TelegramAuthService {
     return this.getSession();
   }
 
-  async requestCode(handle: string): Promise<{ success: boolean; code?: string; botUsername?: string; deepLink?: string; message?: string }> {
-    const raw = handle.replace('@', '').trim().toLowerCase();
+  async createSessionChallenge(): Promise<{ success: boolean; sessionToken?: string; botUsername?: string; deepLink?: string; message?: string }> {
+    try {
+      const resp = await fetch('/api/v1/auth/telegram/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch {
+      // Backend route unreachable
+    }
+
+    const fallbackToken = 'sess_' + Math.random().toString(36).substring(2, 10);
+    const bot = getTelegramBotUsername();
+    return {
+      success: true,
+      sessionToken: fallbackToken,
+      botUsername: bot,
+      deepLink: `https://t.me/${bot}?start=auth_${fallbackToken}`,
+      message: `Open @${bot} in Telegram to authenticate.`,
+    };
+  }
+
+  async requestCode(handle: string): Promise<{ success: boolean; sessionToken?: string; botUsername?: string; deepLink?: string; message?: string }> {
+    const raw = handle.replace(/^@+/, '').trim().toLowerCase();
     if (!raw || raw.length < 3) {
       return { success: false, message: 'Please enter a valid Telegram username (at least 3 characters).' };
     }
@@ -100,20 +135,81 @@ class TelegramAuthService {
       // Backend route unreachable
     }
 
-    // Client-side fallback pairing code
-    const fallbackCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Client-side fallback pairing session token (never the PIN)
+    const fallbackToken = Math.random().toString(36).substring(2, 10);
     const bot = getTelegramBotUsername();
     return {
       success: true,
-      code: fallbackCode,
+      sessionToken: fallbackToken,
       botUsername: bot,
-      deepLink: `https://t.me/${bot}?start=auth_${fallbackCode}`,
-      message: `Code generated: ${fallbackCode}. Open @${bot} to confirm.`,
+      deepLink: `https://t.me/${bot}?start=auth_${fallbackToken}`,
+      message: `Verification challenge created. Open @${bot} in Telegram to verify.`,
     };
   }
 
-  async verifyCode(handle: string, code: string): Promise<{ success: boolean; session?: TelegramUserData; message?: string }> {
-    const raw = handle.replace('@', '').trim().toLowerCase();
+  async checkStatus(sessionToken: string, username?: string): Promise<{ verified: boolean; session?: TelegramUserData; mismatch?: boolean; message?: string }> {
+    const raw = (username || '').replace(/^@+/, '').trim().toLowerCase();
+    const token = sessionToken.trim();
+    try {
+      const query = raw
+        ? `/api/v1/auth/telegram/check-status?sessionToken=${encodeURIComponent(token)}&username=${encodeURIComponent(raw)}`
+        : `/api/v1/auth/telegram/check-status?sessionToken=${encodeURIComponent(token)}`;
+      const resp = await fetch(query);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.verified && data.user) {
+          const verifiedHandle = data.user.username.startsWith('@') ? data.user.username : `@${data.user.username}`;
+          const session: TelegramUserData = {
+            id: data.user.id || `tg_${data.user.username}`,
+            username: verifiedHandle,
+            first_name: data.user.first_name || data.user.username,
+            role: 'student',
+            is_webapp: false,
+            auth_date: Math.floor(Date.now() / 1000),
+          };
+          this.setSession(session);
+          return { verified: true, session };
+        }
+        if (data.mismatch) {
+          return { verified: false, mismatch: true, message: data.message };
+        }
+      }
+    } catch {
+      // network/dev fallback
+    }
+    return { verified: false };
+  }
+
+  authenticateWithTelegramWidget(userData: {
+    id: string | number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    photo_url?: string;
+    auth_date?: number;
+    hash?: string;
+  }): TelegramUserData {
+    const cleanHandle = userData.username
+      ? (userData.username.startsWith('@') ? userData.username : `@${userData.username}`)
+      : `@${userData.first_name || 'Cadet'}`;
+
+    const session: TelegramUserData = {
+      id: String(userData.id),
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      username: cleanHandle,
+      photo_url: userData.photo_url,
+      role: 'student',
+      auth_date: userData.auth_date || Math.floor(Date.now() / 1000),
+      hash: userData.hash,
+      is_webapp: false,
+    };
+    this.setSession(session);
+    return session;
+  }
+
+  async verifyCode(sessionToken: string, code: string, username: string): Promise<{ success: boolean; session?: TelegramUserData; message?: string }> {
+    const raw = username.replace(/^@+/, '').trim().toLowerCase();
     const cleanCode = code.trim();
 
     if (!cleanCode) {
@@ -124,7 +220,7 @@ class TelegramAuthService {
       const resp = await fetch('/api/v1/auth/telegram/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: raw, code: cleanCode }),
+        body: JSON.stringify({ sessionToken, code: cleanCode, username: raw }),
       });
       if (resp.ok) {
         const data = await resp.json();
@@ -147,13 +243,7 @@ class TelegramAuthService {
       // Backend route unreachable
     }
 
-    // Verify code length check
-    if (cleanCode.length === 6) {
-      const session = this.signInWithTelegram(raw);
-      return { success: true, session };
-    }
-
-    return { success: false, message: 'Please enter a valid 6-digit verification code.' };
+    return { success: false, message: 'Invalid or expired PIN. Please enter the code received in Telegram.' };
   }
 
   signInWithTelegram(handle: string): TelegramUserData {

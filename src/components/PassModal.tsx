@@ -30,10 +30,9 @@ export const PassModal: React.FC<PassModalProps> = ({
     setIsProcessing(true);
     setErrorMessage(null);
 
-    // If outside Telegram, direct user to open within Telegram WebApp where native Stars wallet operates
+    // If outside Telegram, return early (UI will render direct Telegram link)
     if (!isInsideTelegram) {
       setIsProcessing(false);
-      window.open(`https://t.me/${botUsername}?startapp=pass`, '_blank');
       return;
     }
 
@@ -182,14 +181,15 @@ export const PassModal: React.FC<PassModalProps> = ({
                 <span>{isProcessing ? 'Opening Telegram Stars...' : 'Unlock Lifetime Pass (⭐️ 675 Stars)'}</span>
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handlePurchaseCreatorPass}
+              <a
+                href={`https://t.me/${botUsername.replace(/^@+/, '').trim()}?startapp=pass`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-6 py-3 rounded-xl font-black text-xs bg-sky-500 hover:bg-sky-400 text-slate-950 transition-all shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
                 <ExternalLink className="w-4 h-4" />
                 <span>Open in Telegram to Pay (⭐️ 675)</span>
-              </button>
+              </a>
             )}
           </div>
 
