@@ -1346,6 +1346,256 @@ function normalizeUrl(url?: string): string {
   return raw.replace(/\/+$/, '');
 }
 
+const CADET_USERS_FILE = '/tmp/registered_users.json';
+interface RegisteredCadetUser {
+  id: string;
+  username: string;
+  password_hash: string;
+  role: string;
+  email?: string;
+  telegram_username?: string;
+  google_email?: string;
+  created_at: string;
+}
+const registeredCadetUsers = new Map<string, RegisteredCadetUser>();
+
+function loadCadetUsers(): Map<string, RegisteredCadetUser> {
+  if (fs.existsSync(CADET_USERS_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(CADET_USERS_FILE, 'utf-8'));
+      for (const [k, v] of Object.entries(data)) {
+        registeredCadetUsers.set(k.toLowerCase(), v as RegisteredCadetUser);
+      }
+    } catch {}
+  }
+  return registeredCadetUsers;
+}
+
+function saveCadetUser(user: RegisteredCadetUser) {
+  loadCadetUsers();
+  registeredCadetUsers.set(user.username.toLowerCase(), user);
+  try {
+    const obj: Record<string, any> = {};
+    for (const [k, v] of registeredCadetUsers.entries()) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(CADET_USERS_FILE, JSON.stringify(obj), 'utf-8');
+  } catch (e) {
+    console.warn('Error saving registered cadet:', e);
+  }
+}
+
+function hashPasswordNode(password: string): string {
+  return crypto.createHash('sha256').update(`${password}:SOVEREIGN_SALT_2026`).digest('hex');
+}
+
+// POST /api/v1/auth/register (Cadet Username & Password registration)
+app.post('/api/v1/auth/register', (req: Request, res: Response) => {
+  const username = ((req.body?.username || '') as string).trim().replace(/^@+/, '');
+  const password = ((req.body?.password || '') as string);
+  const email = ((req.body?.email || '') as string).trim().toLowerCase();
+  const telegramUsername = ((req.body?.telegramUsername || '') as string).trim().replace(/^@+/, '');
+  const googleEmail = ((req.body?.googleEmail || '') as string).trim().toLowerCase();
+
+  if (!username || username.length < 3) {
+    return res.status(400).json({ success: false, message: 'Username must be at least 3 characters long.' });
+  }
+  if (!password || password.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+  }
+
+  const users = loadCadetUsers();
+  if (users.has(username.toLowerCase())) {
+    return res.status(400).json({ success: false, message: `The username "${username}" is already taken.` });
+  }
+
+  const userId = `cadet_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+  const newUser: RegisteredCadetUser = {
+    id: userId,
+    username,
+    password_hash: hashPasswordNode(password),
+    role: 'student',
+    email,
+    telegram_username: telegramUsername,
+    google_email: googleEmail,
+    created_at: new Date().toISOString(),
+  };
+  saveCadetUser(newUser);
+
+  return res.json({
+    success: true,
+    user: {
+      id: newUser.id,
+      username: newUser.username,
+      role: newUser.role,
+      email: newUser.email,
+      telegram_username: newUser.telegram_username,
+      google_email: newUser.google_email,
+      created_at: newUser.created_at,
+    },
+    message: 'Cadet account successfully registered!',
+  });
+});
+
+// POST /api/v1/auth/login (Cadet Username & Password login)
+app.post('/api/v1/auth/login', (req: Request, res: Response) => {
+  const username = ((req.body?.username || '') as string).trim().replace(/^@+/, '');
+  const password = ((req.body?.password || '') as string);
+
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Please provide both username and password.' });
+  }
+
+  const users = loadCadetUsers();
+  const user = users.get(username.toLowerCase());
+  if (!user) {
+    return res.status(404).json({ success: false, message: `Account "${username}" not found.` });
+  }
+
+  const inputHash = hashPasswordNode(password);
+  if (user.password_hash !== inputHash) {
+    return res.status(401).json({ success: false, message: 'Incorrect password.' });
+  }
+
+  return res.json({
+    success: true,
+    user: {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      email: user.email,
+      telegram_username: user.telegram_username,
+      google_email: user.google_email,
+      created_at: user.created_at,
+    },
+  });
+});
+
+// POST /api/v1/auth/google (Google Sign-In / 1-Tap authentication)
+app.post('/api/v1/auth/google', (req: Request, res: Response) => {
+  const email = ((req.body?.email || '') as string).trim().toLowerCase();
+  const name = ((req.body?.name || '') as string).trim();
+  const googleId = ((req.body?.googleId || '') as string).trim();
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Invalid Google email.' });
+  }
+
+  const users = loadCadetUsers();
+  let foundUser: RegisteredCadetUser | undefined;
+  for (const u of users.values()) {
+    if (u.google_email === email || u.email === email) {
+      foundUser = u;
+      break;
+    }
+  }
+
+  if (!foundUser) {
+    const cleanName = (name || email.split('@')[0]).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 20);
+    let username = cleanName || `cadet_${Math.random().toString(36).substring(2, 6)}`;
+    if (users.has(username.toLowerCase())) {
+      username = `${username}_${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    foundUser = {
+      id: googleId ? `cadet_g_${googleId.slice(0, 10)}` : `cadet_g_${Date.now().toString(36)}`,
+      username,
+      password_hash: 'google_oauth_authenticated',
+      role: 'student',
+      email,
+      google_email: email,
+      created_at: new Date().toISOString(),
+    };
+    saveCadetUser(foundUser);
+  }
+
+  return res.json({
+    success: true,
+    user: {
+      id: foundUser.id,
+      username: foundUser.username,
+      role: foundUser.role,
+      email: foundUser.email,
+      google_email: foundUser.google_email,
+      created_at: foundUser.created_at,
+    },
+  });
+});
+
+// POST /api/v1/auth/link-account
+app.post('/api/v1/auth/link-account', (req: Request, res: Response) => {
+  const username = ((req.body?.username || '') as string).trim().replace(/^@+/, '').toLowerCase();
+  const provider = ((req.body?.provider || '') as string).trim().toLowerCase();
+  const identifier = ((req.body?.identifier || '') as string).trim();
+
+  const users = loadCadetUsers();
+  const user = users.get(username);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User account not found.' });
+  }
+
+  if (provider === 'telegram') {
+    user.telegram_username = identifier.replace(/^@+/, '');
+  } else if (provider === 'google') {
+    user.google_email = identifier.toLowerCase();
+  }
+
+  saveCadetUser(user);
+  return res.json({ success: true, message: `Successfully linked ${provider} account.` });
+});
+
+// POST /api/v1/auth/update-username (Cadet Callsign Change)
+app.post('/api/v1/auth/update-username', (req: Request, res: Response) => {
+  const userId = ((req.body?.userId || '') as string).trim();
+  const cleanNew = ((req.body?.newUsername || '') as string).trim().replace(/^@+/, '');
+
+  if (!cleanNew || cleanNew.length < 3) {
+    return res.status(400).json({ success: false, message: 'Callsign must be at least 3 characters long.' });
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(cleanNew)) {
+    return res.status(400).json({ success: false, message: 'Callsign may only contain letters, numbers, underscores, and dashes.' });
+  }
+
+  const users = loadCadetUsers();
+  const newKey = cleanNew.toLowerCase();
+  const existing = users.get(newKey);
+  if (existing && existing.id !== userId) {
+    return res.status(400).json({ success: false, message: `The callsign "${cleanNew}" is already taken.` });
+  }
+
+  let targetUser: RegisteredCadetUser | undefined;
+  for (const u of users.values()) {
+    if (u.id === userId) {
+      targetUser = u;
+      break;
+    }
+  }
+
+  if (targetUser) {
+    const oldKey = targetUser.username.toLowerCase();
+    if (oldKey !== newKey) {
+      users.delete(oldKey);
+    }
+    targetUser.username = cleanNew;
+    saveCadetUser(targetUser);
+  } else {
+    const newRecord: RegisteredCadetUser = {
+      id: userId || `cadet_${Date.now().toString(36)}`,
+      username: cleanNew,
+      password_hash: '',
+      role: 'student',
+      created_at: new Date().toISOString(),
+    };
+    saveCadetUser(newRecord);
+  }
+
+  return res.json({
+    success: true,
+    username: cleanNew,
+    message: `Callsign successfully updated to "${cleanNew}"!`,
+  });
+});
+
 // POST /api/v1/auth/telegram/create-session (Zero-input cryptographic challenge)
 app.post('/api/v1/auth/telegram/create-session', (_req: Request, res: Response) => {
   const sessionToken = 'sess_' + Math.random().toString(36).substring(2, 10);
@@ -1468,17 +1718,35 @@ app.post('/api/v1/auth/telegram/verify-code', (req: Request, res: Response) => {
     });
   }
 
-  const username = record?.username || raw || 'Cadet';
-  const tgId = record?.tgId || `tg_${username}`;
-  const firstName = record?.firstName || username;
+  const codeRecord = getPendingAuth(inputCode);
+  let actualHandle = '';
+  let tgId = '';
+  let firstName = '';
+
+  if (codeRecord?.username) {
+    actualHandle = codeRecord.username.replace(/^@+/, '').trim();
+    tgId = String(codeRecord.tgId || '');
+    firstName = codeRecord.firstName || actualHandle;
+  }
+  if (!actualHandle && record?.username) {
+    actualHandle = record.username.replace(/^@+/, '').trim();
+    tgId = String(record.tgId || tgId);
+    firstName = record.firstName || actualHandle;
+  }
+  if (!actualHandle && raw) {
+    actualHandle = raw.replace(/^@+/, '').trim();
+  }
+
+  const finalUsername = actualHandle || firstName || 'Cadet';
+  const canonicalId = tgId ? `tg_${tgId}` : `tg_${finalUsername.toLowerCase()}`;
 
   return res.json({
     success: true,
     verified: true,
     user: {
-      id: tgId,
-      username: username.startsWith('@') ? username : `@${username}`,
-      first_name: firstName,
+      id: canonicalId,
+      username: `@${finalUsername.replace(/^@+/, '')}`,
+      first_name: firstName || finalUsername,
       auth_date: Math.floor(Date.now() / 1000),
       is_webapp: false,
     },

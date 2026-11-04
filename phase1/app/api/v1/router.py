@@ -142,6 +142,248 @@ def verify_stateless_pin(identifier: str, pin: str) -> bool:
     return False
 
 
+# Cadet Registered Users Store
+_registered_users: dict[str, dict] = {}
+USERS_CACHE_FILE = "/tmp/registered_users.json"
+
+
+def hash_cadet_password(password: str) -> str:
+    data = f"{password}:SOVEREIGN_SALT_2026".encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
+
+
+def load_registered_users() -> dict[str, dict]:
+    global _registered_users
+    if os.path.exists(USERS_CACHE_FILE):
+        try:
+            with open(USERS_CACHE_FILE, "r") as f:
+                disk_users = json.load(f)
+                _registered_users.update(disk_users)
+        except Exception:
+            pass
+    return _registered_users
+
+
+def save_registered_user(user_data: dict):
+    load_registered_users()
+    key = user_data["username"].lower()
+    _registered_users[key] = user_data
+    try:
+        with open(USERS_CACHE_FILE, "w") as f:
+            json.dump(_registered_users, f)
+    except Exception as e:
+        logger.warning(f"Error persisting registered user: {e}")
+
+
+class CadetRegisterRequest(BaseModel):
+    username: str
+    password: str
+    email: str = ""
+    telegramUsername: str = ""
+    googleEmail: str = ""
+
+
+class CadetLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class GoogleAuthRequest(BaseModel):
+    email: str
+    name: str = ""
+    googleId: str = ""
+    avatarUrl: str = ""
+
+
+class LinkAccountRequest(BaseModel):
+    username: str
+    provider: str  # "telegram" or "google"
+    identifier: str
+
+
+@api_v1_router.post("/auth/register", tags=["auth"])
+async def register_cadet(req: CadetRegisterRequest):
+    users = load_registered_users()
+    clean_username = req.username.strip().lstrip("@")
+    if not clean_username or len(clean_username) < 3:
+        return {"success": False, "message": "Username must be at least 3 characters long."}
+    if not req.password or len(req.password) < 6:
+        return {"success": False, "message": "Password must be at least 6 characters long."}
+
+    key = clean_username.lower()
+    if key in users:
+        return {"success": False, "message": f'The username "{clean_username}" is already taken. Please choose another.'}
+
+    password_hash = hash_cadet_password(req.password)
+    user_id = f"cadet_{secrets.token_hex(6)}"
+    user_record = {
+        "id": user_id,
+        "username": clean_username,
+        "password_hash": password_hash,
+        "email": req.email.strip().lower(),
+        "telegram_username": req.telegramUsername.strip().lstrip("@"),
+        "google_email": req.googleEmail.strip().lower(),
+        "role": "student",
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    save_registered_user(user_record)
+
+    return {
+        "success": True,
+        "user": {
+            "id": user_id,
+            "username": clean_username,
+            "role": "student",
+            "email": user_record["email"],
+            "telegram_username": user_record["telegram_username"],
+            "google_email": user_record["google_email"],
+            "created_at": user_record["created_at"],
+        },
+        "message": "Cadet account registered successfully!",
+    }
+
+
+@api_v1_router.post("/auth/login", tags=["auth"])
+async def login_cadet(req: CadetLoginRequest):
+    users = load_registered_users()
+    clean_username = req.username.strip().lstrip("@")
+    key = clean_username.lower()
+    user = users.get(key)
+
+    if not user:
+        return {"success": False, "message": f'Account "{clean_username}" does not exist.'}
+
+    input_hash = hash_cadet_password(req.password)
+    if user.get("password_hash") != input_hash:
+        return {"success": False, "message": "Incorrect password. Please try again."}
+
+    return {
+        "success": True,
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "role": user.get("role", "student"),
+            "email": user.get("email"),
+            "telegram_username": user.get("telegram_username"),
+            "google_email": user.get("google_email"),
+            "created_at": user.get("created_at"),
+        },
+    }
+
+
+@api_v1_router.post("/auth/google", tags=["auth"])
+async def google_auth(req: GoogleAuthRequest):
+    users = load_registered_users()
+    email = req.email.strip().lower()
+    if not email:
+        return {"success": False, "message": "Invalid Google email."}
+
+    # Search for user by google_email or email
+    user = None
+    for u in users.values():
+        if u.get("google_email") == email or u.get("email") == email:
+            user = u
+            break
+
+    if not user:
+        clean_name = (req.name or email.split("@")[0]).replace(" ", "_").strip()
+        username = clean_name[:20] or f"cadet_{secrets.token_hex(4)}"
+        if username.lower() in users:
+            username = f"{username}_{secrets.token_hex(2)}"
+
+        user_id = f"cadet_g_{secrets.token_hex(6)}"
+        user = {
+            "id": user_id,
+            "username": username,
+            "password_hash": "google_oauth_authenticated",
+            "email": email,
+            "google_email": email,
+            "role": "student",
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        save_registered_user(user)
+
+    return {
+        "success": True,
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "role": user.get("role", "student"),
+            "email": user.get("email"),
+            "google_email": user.get("google_email"),
+            "created_at": user.get("created_at"),
+        },
+    }
+
+
+@api_v1_router.post("/auth/link-account", tags=["auth"])
+async def link_account(req: LinkAccountRequest):
+    users = load_registered_users()
+    key = req.username.strip().lstrip("@").lower()
+    user = users.get(key)
+    if not user:
+        return {"success": False, "message": "User not found."}
+
+    if req.provider == "telegram":
+        user["telegram_username"] = req.identifier.strip().lstrip("@")
+    elif req.provider == "google":
+        user["google_email"] = req.identifier.strip().lower()
+
+    save_registered_user(user)
+    return {"success": True, "message": f"Successfully linked {req.provider} account."}
+
+
+class UpdateUsernameRequest(BaseModel):
+    userId: str
+    newUsername: str
+
+
+@api_v1_router.post("/auth/update-username", tags=["auth"])
+async def update_username(req: UpdateUsernameRequest):
+    users = load_registered_users()
+    clean_new = req.newUsername.strip().lstrip("@")
+    if not clean_new or len(clean_new) < 3:
+        return {"success": False, "message": "Callsign must be at least 3 characters long."}
+    if not clean_new.replace("_", "").replace("-", "").isalnum():
+        return {"success": False, "message": "Callsign may only contain letters, numbers, underscores, and dashes."}
+
+    new_key = clean_new.lower()
+    existing = users.get(new_key)
+    if existing and existing.get("id") != req.userId:
+        return {"success": False, "message": f'The callsign "{clean_new}" is already taken.'}
+
+    # Find and update user
+    target_user = None
+    for u in users.values():
+        if u.get("id") == req.userId:
+            target_user = u
+            break
+
+    if target_user:
+        old_key = target_user["username"].lower()
+        if old_key in users and old_key != new_key:
+            del users[old_key]
+        target_user["username"] = clean_new
+        users[new_key] = target_user
+        save_registered_user(target_user)
+    else:
+        new_record = {
+            "id": req.userId,
+            "username": clean_new,
+            "password_hash": "",
+            "role": "student",
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        users[new_key] = new_record
+        save_registered_user(new_record)
+
+    return {
+        "success": True,
+        "username": clean_new,
+        "message": f'Callsign successfully updated to "{clean_new}"!',
+    }
+
+
 class TelegramCodeRequest(BaseModel):
     username: str
 
@@ -262,17 +504,35 @@ async def verify_telegram_code(req: TelegramCodeVerify):
     if not is_valid:
         return {"success": False, "message": "Incorrect verification code. Please check your Telegram chat with @Hqgamebot."}
 
-    username = (record.get("username") if record else req.username.replace("@", "")) or "Cadet"
-    tg_id = (record.get("tg_id") if record else f"tg_{username}")
-    first_name = (record.get("first_name") if record else username)
+    # Retrieve authentic Telegram username from input_code record, session record, or request
+    code_record = get_auth_record(input_code)
+    actual_handle = ""
+    tg_id = ""
+    first_name = ""
+
+    if code_record and code_record.get("username"):
+        actual_handle = code_record["username"].lstrip("@").strip()
+        tg_id = str(code_record.get("tg_id") or "")
+        first_name = code_record.get("first_name") or actual_handle
+
+    if not actual_handle and record and record.get("username"):
+        actual_handle = record["username"].lstrip("@").strip()
+        tg_id = str(record.get("tg_id") or tg_id)
+        first_name = record.get("first_name") or actual_handle
+
+    if not actual_handle and req.username:
+        actual_handle = req.username.replace("@", "").strip()
+
+    final_username = actual_handle or first_name or "Cadet"
+    canonical_id = f"tg_{tg_id}" if tg_id else f"tg_{final_username.lower()}"
 
     return {
         "success": True,
         "verified": True,
         "user": {
-            "id": tg_id,
-            "username": f"@{username.lstrip('@')}",
-            "first_name": first_name,
+            "id": canonical_id,
+            "username": f"@{final_username.lstrip('@')}",
+            "first_name": first_name or final_username,
             "is_webapp": False,
         },
     }

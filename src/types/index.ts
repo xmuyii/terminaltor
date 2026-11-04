@@ -1,4 +1,5 @@
 export type UserRole = 'student' | 'instructor' | 'teacher' | 'admin';
+export type AuthProvider = 'telegram' | 'credentials' | 'google';
 
 export interface Profile {
   id: string;
@@ -16,6 +17,9 @@ export interface Profile {
   academy_id?: string;
   academy_name?: string;
   equipped_style_title?: string;
+  auth_provider?: AuthProvider;
+  telegram_username?: string;
+  google_email?: string;
 }
 
 export interface TestCase {

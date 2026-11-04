@@ -1,5 +1,6 @@
 import { Profile, UserRole } from '../types';
 import { SupabaseStore } from './supabase';
+import { accountAuth } from './accountAuth';
 
 export interface TelegramUserData {
   id: string;
@@ -35,7 +36,7 @@ class TelegramAuthService {
   }
 
   hasActiveSession(): boolean {
-    return !!this.getSession();
+    return !!this.getSession() || accountAuth.hasActiveSession();
   }
 
   setSession(data: TelegramUserData): void {
@@ -47,6 +48,8 @@ class TelegramAuthService {
       username: tgUsername,
       avatar_url: data.photo_url || '',
       role: data.role || 'student',
+      auth_provider: 'telegram',
+      telegram_username: tgUsername.replace(/^@+/, ''),
       academy_id: undefined,
       academy_name: 'Solo Developer',
     });
@@ -55,6 +58,7 @@ class TelegramAuthService {
   clearSession(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(STORAGE_KEY_TG);
+    accountAuth.clearSession();
   }
 
   signOut(): void {
