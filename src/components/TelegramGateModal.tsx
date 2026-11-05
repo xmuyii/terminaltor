@@ -21,6 +21,7 @@ import { telegramAuth, getTelegramBotUsername } from '../lib/telegramAuth';
 import { accountAuth } from '../lib/accountAuth';
 import { Profile } from '../types';
 import { SupabaseStore } from '../lib/supabase';
+import { signInWithGooglePopup } from '../lib/firebaseGoogleAuth';
 
 interface TelegramGateModalProps {
   isOpen: boolean;
@@ -274,27 +275,26 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
     }
   };
 
-  // Fast Google 1-Tap / Sign-In
-  const handleGoogleQuickAuth = async () => {
+  // Real Google Sign-In with Google Services & Firebase
+  const handleGoogleSignIn = async () => {
     setError(null);
     setIsSubmitting(true);
 
-    // Prompt user for Google email if in mock/web mode without native popup
-    const simulatedEmail = googleEmailInput.trim() || prompt('Enter your Google email address:');
-    if (!simulatedEmail || !simulatedEmail.includes('@')) {
-      setError('A valid Google email address is required.');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
+      // 1. Trigger Google Identity Services popup
+      const googleAuth = await signInWithGooglePopup();
+
+      // 2. Register or sign in cadet with verified Google credentials
       const result = await accountAuth.loginWithGoogle({
-        email: simulatedEmail.trim().toLowerCase(),
+        email: googleAuth.email,
+        name: googleAuth.displayName,
+        avatarUrl: googleAuth.photoUrl,
+        sub: googleAuth.uid,
         desiredUsername: usernameInput.trim() || undefined,
       });
 
       if (result.success && result.session) {
-        setSuccessMessage(`Google account verified (${result.session.google_email})!`);
+        setSuccessMessage(`Google verified: ${googleAuth.email}! Welcome to TERMINALTOR.`);
         setIsAutoDetected(true);
         setVerifiedHandle(result.session.username);
         const updatedProfile = SupabaseStore.getProfile();
@@ -305,7 +305,8 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
         setError(result.message || 'Google authentication failed.');
       }
     } catch (err: any) {
-      setError(err?.message || 'Google Sign-In failed.');
+      console.error('Google Sign-In Error:', err);
+      setError(err?.message || 'Google account verification failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -419,32 +420,31 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
                 </button>
               </div>
 
-              {/* Quick Google 1-Tap Option */}
-              <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-2xl flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-slate-900 font-bold shrink-0 text-sm shadow">
-                    G
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-white">Continue with Google</div>
-                    <div className="text-[10px] text-slate-400">1-Tap instant cadet identity</div>
-                  </div>
-                </div>
+              {/* Official Google Sign-In Button */}
+              <div className="space-y-1.5">
                 <button
                   type="button"
-                  onClick={handleGoogleQuickAuth}
+                  onClick={handleGoogleSignIn}
                   disabled={isSubmitting}
-                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                  className="w-full py-3 px-4 bg-white hover:bg-slate-100 active:scale-[0.99] text-slate-900 font-semibold text-sm rounded-xl border border-slate-200 shadow-md transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Google Auth</span>
+                  <svg className="w-5 h-5 shrink-0" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                  </svg>
+                  <span>{isSubmitting ? 'Verifying with Google...' : 'Continue with Google'}</span>
                 </button>
+                <div className="text-[10px] text-center text-slate-400 font-mono">
+                  Verified with Google services • Instant cadet setup
+                </div>
               </div>
 
               <div className="flex items-center gap-2 my-1">
                 <div className="h-px bg-slate-800 flex-1" />
                 <span className="text-[10px] font-mono uppercase text-slate-500 tracking-wider">
-                  Or with Username &amp; Password
+                  Or with Cadet Username &amp; Password
                 </span>
                 <div className="h-px bg-slate-800 flex-1" />
               </div>
@@ -524,32 +524,52 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
                           <label className="block text-[11px] text-slate-400 mb-1">
                             Link Google Email (optional):
                           </label>
-                          <div className="relative">
-                            <input
-                              type="email"
-                              value={googleEmailInput}
-                              onChange={(e) => setGoogleEmailInput(e.target.value)}
-                              placeholder="cadet@gmail.com"
-                              className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
-                            />
-                            <Mail className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-2.5" />
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <input
+                                type="email"
+                                value={googleEmailInput}
+                                onChange={(e) => setGoogleEmailInput(e.target.value)}
+                                placeholder="cadet@gmail.com"
+                                className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                              />
+                              <Mail className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-2.5" />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  setIsSubmitting(true);
+                                  const gAuth = await signInWithGooglePopup();
+                                  setGoogleEmailInput(gAuth.email);
+                                  setSuccessMessage(`Google account verified: ${gAuth.email}`);
+                                } catch (err: any) {
+                                  setError(err.message);
+                                } finally {
+                                  setIsSubmitting(false);
+                                }
+                              }}
+                              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-lg border border-slate-700 cursor-pointer shrink-0"
+                            >
+                              Verify via Google
+                            </button>
                           </div>
                         </div>
 
                         <div>
                           <label className="block text-[11px] text-slate-400 mb-1">
-                            Link Telegram Username (optional):
+                            Link Telegram Account (optional):
                           </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={telegramHandleInput}
-                              onChange={(e) => setTelegramHandleInput(e.target.value)}
-                              placeholder="@telegram_handle"
-                              className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 font-mono"
-                            />
-                            <Send className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-2.5 -rotate-12" />
-                          </div>
+                          {webAppUser ? (
+                            <div className="p-2 bg-slate-900 border border-sky-500/30 rounded-lg flex items-center justify-between text-xs">
+                              <span className="text-sky-300 font-mono">@{webAppUser.username || webAppUser.first_name}</span>
+                              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded">Verified via Mini App</span>
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-slate-400 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 leading-relaxed">
+                              🔒 To prevent account spoofing, Telegram handles are cryptographically verified via @{botUsername} handshake in your profile settings.
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}

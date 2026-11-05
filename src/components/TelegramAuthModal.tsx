@@ -18,11 +18,13 @@ import {
   Link2,
   CheckCircle2,
   Pencil,
+  Loader2,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 import { telegramAuth, TelegramUserData, getTelegramBotUsername } from '../lib/telegramAuth';
 import { accountAuth, AccountSession } from '../lib/accountAuth';
 import { SupabaseStore } from '../lib/supabase';
+import { signInWithGooglePopup } from '../lib/firebaseGoogleAuth';
 
 interface TelegramAuthModalProps {
   isOpen: boolean;
@@ -57,6 +59,15 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
   const [linkInput, setLinkInput] = useState('');
   const [linkFeedback, setLinkFeedback] = useState<string | null>(null);
 
+  // Telegram verification state for linking
+  const [tgSessionToken, setTgSessionToken] = useState<string | null>(null);
+  const [tgDeepLink, setTgDeepLink] = useState<string | null>(null);
+  const [isVerifyingTg, setIsVerifyingTg] = useState(false);
+  const [tgPinInput, setTgPinInput] = useState('');
+  const [tgWaitingForBot, setTgWaitingForBot] = useState(false);
+
+  const botUsername = getTelegramBotUsername();
+
   useEffect(() => {
     if (isOpen) {
       setSession(telegramAuth.getSession());
@@ -66,8 +77,46 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
       setIsEditingUsername(false);
       setNewUsernameInput(profile.username?.replace(/^@+/, '') || '');
       setUsernameUpdateMsg(null);
+      setIsLinkingGoogle(false);
+      setIsLinkingTelegram(false);
+      setTgWaitingForBot(false);
+      setTgSessionToken(null);
+      setTgDeepLink(null);
+      setTgPinInput('');
     }
   }, [isOpen, profile.username]);
+
+  // Real-time polling while user interacts with Telegram bot
+  useEffect(() => {
+    if (!tgWaitingForBot || !tgSessionToken) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await telegramAuth.checkStatus(tgSessionToken);
+        if (res.verified && res.session) {
+          const verifiedHandle = res.session.username.replace(/^@+/, '');
+          const linkResult = await accountAuth.linkTelegramToCurrentAccount(verifiedHandle, res.session.id);
+          if (!linkResult.success) {
+            setLinkFeedback(linkResult.message || `Telegram @${verifiedHandle} is already linked to another cadet account.`);
+            setTgWaitingForBot(false);
+            return;
+          }
+          const updated = SupabaseStore.updateProfile({
+            telegram_username: verifiedHandle,
+          });
+          onProfileUpdated(updated);
+          setAccountSession(accountAuth.getSession());
+          setTgWaitingForBot(false);
+          setIsLinkingTelegram(false);
+          setLinkFeedback(`Telegram verified & linked: @${verifiedHandle}!`);
+        }
+      } catch {
+        // continue polling
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [tgWaitingForBot, tgSessionToken, onProfileUpdated]);
 
   if (!isOpen) return null;
 
@@ -92,7 +141,7 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
     onClose();
   };
 
-  const handleLinkGoogle = (e: React.FormEvent) => {
+  const handleLinkGoogle = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = linkInput.trim().toLowerCase();
     if (!clean || !clean.includes('@')) {
@@ -100,7 +149,12 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
       return;
     }
 
-    accountAuth.linkGoogleToCurrentAccount(clean);
+    const linkResult = await accountAuth.linkGoogleToCurrentAccount(clean);
+    if (!linkResult.success) {
+      setLinkFeedback(linkResult.message || `Google account ${clean} is already linked to another cadet.`);
+      return;
+    }
+
     const updated = SupabaseStore.updateProfile({ google_email: clean });
     onProfileUpdated(updated);
     setAccountSession(accountAuth.getSession());
@@ -109,21 +163,115 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
     setLinkFeedback('Google account linked successfully!');
   };
 
-  const handleLinkTelegram = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = linkInput.trim().replace(/^@+/, '');
-    if (!clean || clean.length < 3) {
-      setLinkFeedback('Please enter a valid Telegram username.');
+  const handleVerifyGooglePopup = async () => {
+    setLinkFeedback(null);
+    try {
+      const gAuth = await signInWithGooglePopup();
+      const linkResult = await accountAuth.linkGoogleToCurrentAccount(gAuth.email);
+      if (!linkResult.success) {
+        setLinkFeedback(linkResult.message || `Google account ${gAuth.email} is already linked to another cadet.`);
+        return;
+      }
+      const updated = SupabaseStore.updateProfile({
+        google_email: gAuth.email,
+        avatar_url: gAuth.photoUrl || undefined,
+      });
+      onProfileUpdated(updated);
+      setAccountSession(accountAuth.getSession());
+      setIsLinkingGoogle(false);
+      setLinkInput('');
+      setLinkFeedback(`Google account verified and linked: ${gAuth.email}!`);
+    } catch (err: any) {
+      setLinkFeedback(err.message || 'Google account verification failed.');
+    }
+  };
+
+  const handleStartTelegramVerification = async () => {
+    setIsVerifyingTg(true);
+    setLinkFeedback(null);
+    setTgPinInput('');
+
+    // Check if user is already inside Telegram WebApp
+    const win = typeof window !== 'undefined' ? (window as any) : null;
+    const tgWebUser = win?.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (tgWebUser && (tgWebUser.username || tgWebUser.first_name)) {
+      const handle = (tgWebUser.username || tgWebUser.first_name || 'Cadet').replace(/^@+/, '');
+      const linkResult = await accountAuth.linkTelegramToCurrentAccount(handle, String(tgWebUser.id));
+      if (!linkResult.success) {
+        setLinkFeedback(linkResult.message || `Telegram handle @${handle} is already linked to another cadet.`);
+        setIsVerifyingTg(false);
+        return;
+      }
+      const updated = SupabaseStore.updateProfile({
+        telegram_username: handle,
+        avatar_url: tgWebUser.photo_url || undefined,
+      });
+      onProfileUpdated(updated);
+      setAccountSession(accountAuth.getSession());
+      setIsLinkingTelegram(false);
+      setIsVerifyingTg(false);
+      setLinkFeedback(`Telegram account verified via Mini App: @${handle}!`);
       return;
     }
 
-    accountAuth.linkTelegramToCurrentAccount(clean);
-    const updated = SupabaseStore.updateProfile({ telegram_username: clean });
-    onProfileUpdated(updated);
-    setAccountSession(accountAuth.getSession());
-    setIsLinkingTelegram(false);
-    setLinkInput('');
-    setLinkFeedback('Telegram account linked successfully!');
+    try {
+      const res = await telegramAuth.createSessionChallenge();
+      if (res.success && res.sessionToken) {
+        setTgSessionToken(res.sessionToken);
+        const link = res.deepLink || `https://t.me/${botUsername}?start=auth_${res.sessionToken}`;
+        setTgDeepLink(link);
+        setTgWaitingForBot(true);
+        // Open the bot deep link in a new tab for seamless verification
+        window.open(link, '_blank', 'noopener,noreferrer');
+      } else {
+        setLinkFeedback(res.message || 'Failed creating Telegram verification challenge.');
+      }
+    } catch (err: any) {
+      setLinkFeedback(err.message || 'Error connecting to Telegram verification service.');
+    } finally {
+      setIsVerifyingTg(false);
+    }
+  };
+
+  const handleVerifyTgPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tgPinInput.trim()) {
+      setLinkFeedback('Please enter the 6-digit confirmation PIN from @' + botUsername);
+      return;
+    }
+    if (!tgSessionToken) {
+      setLinkFeedback('Verification session expired. Please tap "1-Tap: Verify with @' + botUsername + '" first.');
+      return;
+    }
+
+    setIsVerifyingTg(true);
+    setLinkFeedback(null);
+
+    try {
+      const res = await telegramAuth.verifyCode(tgSessionToken, tgPinInput.trim(), '');
+      if (res.success && res.session) {
+        const verifiedHandle = res.session.username.replace(/^@+/, '');
+        const linkResult = await accountAuth.linkTelegramToCurrentAccount(verifiedHandle, res.session.id);
+        if (!linkResult.success) {
+          setLinkFeedback(linkResult.message || `Telegram handle @${verifiedHandle} is already linked to another cadet.`);
+          return;
+        }
+        const updated = SupabaseStore.updateProfile({
+          telegram_username: verifiedHandle,
+        });
+        onProfileUpdated(updated);
+        setAccountSession(accountAuth.getSession());
+        setTgWaitingForBot(false);
+        setIsLinkingTelegram(false);
+        setLinkFeedback(`Telegram account verified & linked: @${verifiedHandle}!`);
+      } else {
+        setLinkFeedback(res.message || 'Incorrect confirmation PIN. Check your Telegram chat with the bot.');
+      }
+    } catch (err: any) {
+      setLinkFeedback(err.message || 'Failed verifying PIN.');
+    } finally {
+      setIsVerifyingTg(false);
+    }
   };
 
   const handleUpdateCallsign = async (e: React.FormEvent) => {
@@ -420,9 +568,28 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
 
                 {/* Linking Google Form */}
                 {isLinkingGoogle && (
-                  <form onSubmit={handleLinkGoogle} className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-                    <label className="block text-[11px] text-slate-400">Enter Google Email:</label>
-                    <div className="flex gap-2">
+                  <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2.5">
+                    <button
+                      type="button"
+                      onClick={handleVerifyGooglePopup}
+                      className="w-full py-2 px-3 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow transition-all"
+                    >
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 48 48">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                      </svg>
+                      <span>Verify &amp; Link with Google Services</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <div className="h-px bg-slate-800 flex-1" />
+                      <span className="text-[10px] text-slate-500 font-mono">OR ENTER ADDRESS</span>
+                      <div className="h-px bg-slate-800 flex-1" />
+                    </div>
+
+                    <form onSubmit={handleLinkGoogle} className="flex gap-2">
                       <input
                         type="email"
                         value={linkInput}
@@ -444,8 +611,8 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
                       >
                         Cancel
                       </button>
-                    </div>
-                  </form>
+                    </form>
+                  </div>
                 )}
 
                 {/* Telegram Account Row */}
@@ -482,34 +649,126 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
                   )}
                 </div>
 
-                {/* Linking Telegram Form */}
+                {/* Real Verified Telegram Linking Card */}
                 {isLinkingTelegram && (
-                  <form onSubmit={handleLinkTelegram} className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-                    <label className="block text-[11px] text-slate-400">Enter Telegram Username:</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={linkInput}
-                        onChange={(e) => setLinkInput(e.target.value)}
-                        placeholder="@username"
-                        className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-sky-500 font-mono"
-                        required
-                      />
-                      <button
-                        type="submit"
-                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-lg cursor-pointer"
-                      >
-                        Save
-                      </button>
+                  <div className="p-3.5 bg-slate-950 border border-sky-500/40 rounded-xl space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Cryptographic Telegram Verification</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-mono">Anti-Spoofing</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      To prevent claiming another cadet's handle, ownership must be confirmed with @{botUsername}.
+                    </p>
+
+                    {/* WebApp Fast Path */}
+                    {typeof window !== 'undefined' && (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user && (
                       <button
                         type="button"
-                        onClick={() => setIsLinkingTelegram(false)}
-                        className="px-2 py-1.5 text-slate-400 hover:text-white text-xs cursor-pointer"
+                        onClick={handleStartTelegramVerification}
+                        className="w-full py-2 px-3 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-lg flex items-center justify-center gap-2 cursor-pointer transition-all"
+                      >
+                        <Send className="w-3.5 h-3.5 -rotate-12 fill-current" />
+                        <span>
+                          Link as @{(window as any).Telegram.WebApp.initDataUnsafe.user.username || (window as any).Telegram.WebApp.initDataUnsafe.user.first_name} (Mini App Verified)
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Browser Verification via Bot Deep Link & Poller */}
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleStartTelegramVerification}
+                        disabled={isVerifyingTg}
+                        className="w-full py-2.5 px-3 bg-sky-500 hover:bg-sky-400 active:scale-[0.99] text-slate-950 font-black text-xs rounded-lg shadow-md shadow-sky-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        {isVerifyingTg ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Creating Secure Challenge...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5 -rotate-12 fill-current" />
+                            <span>1-Tap: Verify with @{botUsername}</span>
+                            <ExternalLink className="w-3.5 h-3.5 ml-0.5" />
+                          </>
+                        )}
+                      </button>
+
+                      {tgWaitingForBot && (
+                        <div className="p-2.5 bg-slate-900 border border-sky-500/30 rounded-lg space-y-2">
+                          <div className="flex items-center gap-2 text-xs text-sky-300">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                            </span>
+                            <span className="font-semibold text-[11px]">Waiting for Telegram Handshake...</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-relaxed">
+                            Tap <strong>START</strong> in the opened @{botUsername} chat. This window will automatically link your verified handle!
+                          </p>
+                          {tgDeepLink && (
+                            <a
+                              href={tgDeepLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] font-mono text-sky-400 hover:text-sky-300 underline block"
+                            >
+                              Click here if Telegram didn't open automatically
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* PIN Entry Fallback */}
+                    <div className="pt-1">
+                      <div className="flex items-center gap-2 my-1">
+                        <div className="h-px bg-slate-800 flex-1" />
+                        <span className="text-[10px] font-mono uppercase text-slate-500">Or enter 6-digit bot pin</span>
+                        <div className="h-px bg-slate-800 flex-1" />
+                      </div>
+
+                      <form onSubmit={handleVerifyTgPin} className="flex gap-2 mt-2">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={tgPinInput}
+                            onChange={(e) => setTgPinInput(e.target.value.replace(/[^0-9]/g, ''))}
+                            placeholder="6-digit PIN"
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 font-mono tracking-widest text-center"
+                          />
+                          <KeyRound className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2" />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={isVerifyingTg || tgPinInput.length < 6}
+                          className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-slate-950 font-bold text-xs rounded-lg cursor-pointer transition-all"
+                        >
+                          Confirm PIN
+                        </button>
+                      </form>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLinkingTelegram(false);
+                          setTgWaitingForBot(false);
+                        }}
+                        className="text-xs text-slate-400 hover:text-white cursor-pointer px-2 py-1"
                       >
                         Cancel
                       </button>
                     </div>
-                  </form>
+                  </div>
                 )}
 
                 {linkFeedback && (

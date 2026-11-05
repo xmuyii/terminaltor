@@ -43,15 +43,47 @@ class TelegramAuthService {
     if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEY_TG, JSON.stringify(data));
     const tgUsername = data.username ? (data.username.startsWith('@') ? data.username : `@${data.username}`) : (data.first_name || 'Cadet');
+    const cleanTg = tgUsername.replace(/^@+/, '').toLowerCase();
+
+    // Check if an existing cadet account already has this Telegram handle linked
+    const users = accountAuth.getRegisteredUsers();
+    let existingAccount: any;
+    for (const u of Object.values(users)) {
+      if (
+        (u.telegram_username && u.telegram_username.toLowerCase() === cleanTg) ||
+        (data.id && (u.id === data.id || u.id === `tg_${data.id}`))
+      ) {
+        existingAccount = u;
+        break;
+      }
+    }
+
+    const canonicalId = existingAccount ? existingAccount.id : data.id;
+    const finalCallsign = existingAccount ? existingAccount.username : tgUsername;
+    const finalRole = existingAccount ? existingAccount.role : (data.role || 'student');
+    const googleEmail = existingAccount?.google_email;
+
     SupabaseStore.updateProfile({
-      id: data.id,
-      username: tgUsername,
+      id: canonicalId,
+      username: finalCallsign,
       avatar_url: data.photo_url || '',
-      role: data.role || 'student',
+      role: finalRole,
       auth_provider: 'telegram',
-      telegram_username: tgUsername.replace(/^@+/, ''),
+      telegram_username: cleanTg,
+      google_email: googleEmail,
       academy_id: undefined,
       academy_name: 'Solo Developer',
+    });
+
+    accountAuth.setSession({
+      id: canonicalId,
+      username: finalCallsign,
+      role: finalRole,
+      auth_provider: 'telegram',
+      telegram_username: cleanTg,
+      google_email: googleEmail,
+      avatar_url: data.photo_url,
+      created_at: existingAccount?.created_at || new Date().toISOString(),
     });
   }
 

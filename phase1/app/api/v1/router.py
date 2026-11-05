@@ -33,7 +33,7 @@ class CreateTelegramInvoiceRequest(BaseModel):
 
 @api_v1_router.post("/telegram/create-invoice", tags=["telegram"])
 async def create_telegram_invoice(req: CreateTelegramInvoiceRequest):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN") or "8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8"
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     if bot_token:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -540,7 +540,7 @@ async def verify_telegram_code(req: TelegramCodeVerify):
 
 @api_v1_router.post("/telegram/webhook", tags=["telegram"])
 async def telegram_webhook(update: dict):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN") or "8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8"
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     app_url = normalize_app_url(os.getenv("APP_URL"))
 
     # Handle pre_checkout_query (Telegram Stars payments)
@@ -663,10 +663,18 @@ async def telegram_webhook(update: dict):
 
 @api_v1_router.get("/telegram/bot-status", tags=["telegram"])
 async def get_bot_status():
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN") or "8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8"
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     raw_bot = os.getenv("VITE_TELEGRAM_BOT_USERNAME", "Hqgamebot")
     bot_username = raw_bot.lstrip("@").strip() or "Hqgamebot"
     app_url = normalize_app_url(os.getenv("APP_URL"))
+
+    if not bot_token:
+        return {
+            "configured": False,
+            "message": "TELEGRAM_BOT_TOKEN environment variable not configured",
+            "botUsername": bot_username,
+            "appUrl": app_url,
+        }
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -684,8 +692,13 @@ async def get_bot_status():
 
 @api_v1_router.get("/telegram/setup-webhook", tags=["telegram"])
 async def setup_webhook(token: str = "", url: str = ""):
-    bot_token = token or os.getenv("TELEGRAM_BOT_TOKEN") or "8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8"
+    bot_token = token or os.getenv("TELEGRAM_BOT_TOKEN")
     app_url = normalize_app_url(url or os.getenv("APP_URL"))
+    if not bot_token:
+        return {
+            "success": False,
+            "error": "Missing bot token. Pass ?token=YOUR_BOT_TOKEN or set TELEGRAM_BOT_TOKEN in your environment.",
+        }
 
     try:
         webhook_url = f"{app_url}/api/v1/telegram/webhook"

@@ -47,7 +47,7 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 class AccountAuthService {
-  private getRegisteredUsers(): Record<string, StoredCredential> {
+  getRegisteredUsers(): Record<string, StoredCredential> {
     if (typeof window === 'undefined') return {};
     try {
       const stored = localStorage.getItem(STORAGE_KEY_USERS);
@@ -150,6 +150,27 @@ class AccountAuthService {
     const users = this.getRegisteredUsers();
     if (users[key]) {
       return { success: false, message: `The username "${cleanUsername}" is already registered. Please sign in or choose another.` };
+    }
+
+    // Enforce 1:1 uniqueness for linked accounts during registration
+    if (options?.googleEmail) {
+      const cleanG = options.googleEmail.trim().toLowerCase();
+      const existingGoogle = Object.values(users).find(
+        (u) => u.google_email?.toLowerCase() === cleanG || u.email?.toLowerCase() === cleanG
+      );
+      if (existingGoogle) {
+        return { success: false, message: `Google account ${options.googleEmail} is already linked to cadet "${existingGoogle.username}".` };
+      }
+    }
+
+    if (options?.telegramUsername) {
+      const cleanTg = options.telegramUsername.trim().replace(/^@+/, '').toLowerCase();
+      const existingTg = Object.values(users).find(
+        (u) => u.telegram_username?.toLowerCase() === cleanTg
+      );
+      if (existingTg) {
+        return { success: false, message: `Telegram handle @${options.telegramUsername} is already linked to cadet "${existingTg.username}".` };
+      }
     }
 
     const passwordHash = await hashPassword(rawPassword);
@@ -349,27 +370,29 @@ class AccountAuthService {
     return { success: true, session };
   }
 
-  linkTelegramToCurrentAccount(telegramUsername: string, tgId?: string): boolean {
+  async linkTelegramToCurrentAccount(telegramUsername: string, tgId?: string): Promise<{ success: boolean; message?: string }> {
     const current = this.getSession();
-    if (!current) return false;
+    if (!current) return { success: false, message: 'No active cadet session found.' };
 
-    const cleanTg = telegramUsername.replace(/^@+/, '').trim();
-    current.telegram_username = cleanTg;
-    if (tgId) current.telegram_id = String(tgId);
+    const cleanTg = telegramUsername.replace(/^@+/, '').trim().toLowerCase();
+    if (!cleanTg) return { success: false, message: 'Invalid Telegram username.' };
 
-    this.setSession(current);
-
-    // Update in stored credentials
     const users = this.getRegisteredUsers();
-    const key = current.username.toLowerCase();
-    if (users[key]) {
-      users[key].telegram_username = cleanTg;
-      this.saveRegisteredUsers(users);
+    // 1. Enforce local 1:1 uniqueness
+    for (const [key, u] of Object.entries(users)) {
+      if (key !== current.username.toLowerCase()) {
+        if (u.telegram_username?.toLowerCase() === cleanTg) {
+          return {
+            success: false,
+            message: `Telegram handle @${telegramUsername.replace(/^@+/, '')} is already linked to cadet "${u.username}". Each Telegram account can only belong to one cadet.`
+          };
+        }
+      }
     }
 
-    // Call backend to sync
+    // 2. Call backend to verify and persist with server-side uniqueness check
     try {
-      fetch('/api/v1/auth/link-account', {
+      const resp = await fetch('/api/v1/auth/link-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -378,28 +401,53 @@ class AccountAuthService {
           identifier: cleanTg,
         }),
       });
-    } catch {}
+      const data = await resp.json();
+      if (!resp.ok || !data.success) {
+        return { success: false, message: data.message || 'Failed to link Telegram account.' };
+      }
+    } catch {
+      // offline fallback
+    }
 
-    return true;
-  }
-
-  linkGoogleToCurrentAccount(googleEmail: string): boolean {
-    const current = this.getSession();
-    if (!current) return false;
-
-    const cleanEmail = googleEmail.trim().toLowerCase();
-    current.google_email = cleanEmail;
+    // 3. Update active session and local storage
+    current.telegram_username = cleanTg;
+    if (tgId) current.telegram_id = String(tgId);
     this.setSession(current);
 
-    const users = this.getRegisteredUsers();
     const key = current.username.toLowerCase();
     if (users[key]) {
-      users[key].google_email = cleanEmail;
+      users[key].telegram_username = cleanTg;
       this.saveRegisteredUsers(users);
     }
 
+    return { success: true };
+  }
+
+  async linkGoogleToCurrentAccount(googleEmail: string): Promise<{ success: boolean; message?: string }> {
+    const current = this.getSession();
+    if (!current) return { success: false, message: 'No active cadet session found.' };
+
+    const cleanEmail = googleEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { success: false, message: 'Invalid Google email address.' };
+    }
+
+    const users = this.getRegisteredUsers();
+    // 1. Enforce local 1:1 uniqueness
+    for (const [key, u] of Object.entries(users)) {
+      if (key !== current.username.toLowerCase()) {
+        if (u.google_email?.toLowerCase() === cleanEmail || u.email?.toLowerCase() === cleanEmail) {
+          return {
+            success: false,
+            message: `Google account ${googleEmail} is already linked to cadet "${u.username}". Each Google account can only belong to one cadet.`
+          };
+        }
+      }
+    }
+
+    // 2. Call backend to verify and persist with server-side uniqueness check
     try {
-      fetch('/api/v1/auth/link-account', {
+      const resp = await fetch('/api/v1/auth/link-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -408,9 +456,25 @@ class AccountAuthService {
           identifier: cleanEmail,
         }),
       });
-    } catch {}
+      const data = await resp.json();
+      if (!resp.ok || !data.success) {
+        return { success: false, message: data.message || 'Failed to link Google account.' };
+      }
+    } catch {
+      // offline fallback
+    }
 
-    return true;
+    // 3. Update active session and local storage
+    current.google_email = cleanEmail;
+    this.setSession(current);
+
+    const key = current.username.toLowerCase();
+    if (users[key]) {
+      users[key].google_email = cleanEmail;
+      this.saveRegisteredUsers(users);
+    }
+
+    return { success: true };
   }
 
   async updateUsername(newUsername: string): Promise<{ success: boolean; message: string; username?: string }> {

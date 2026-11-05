@@ -1522,7 +1522,7 @@ app.post('/api/v1/auth/google', (req: Request, res: Response) => {
   });
 });
 
-// POST /api/v1/auth/link-account
+// POST /api/v1/auth/link-account (Enforces strict 1:1 uniqueness per account)
 app.post('/api/v1/auth/link-account', (req: Request, res: Response) => {
   const username = ((req.body?.username || '') as string).trim().replace(/^@+/, '').toLowerCase();
   const provider = ((req.body?.provider || '') as string).trim().toLowerCase();
@@ -1535,9 +1535,29 @@ app.post('/api/v1/auth/link-account', (req: Request, res: Response) => {
   }
 
   if (provider === 'telegram') {
+    const cleanTg = identifier.replace(/^@+/, '').toLowerCase();
+    // Enforce 1:1 uniqueness across all cadet accounts
+    for (const [key, existing] of users.entries()) {
+      if (key !== username && existing.telegram_username?.toLowerCase() === cleanTg) {
+        return res.status(409).json({
+          success: false,
+          message: `The Telegram handle @${identifier.replace(/^@+/, '')} is already linked to cadet "${existing.username}". Each Telegram account can only belong to one cadet.`,
+        });
+      }
+    }
     user.telegram_username = identifier.replace(/^@+/, '');
   } else if (provider === 'google') {
-    user.google_email = identifier.toLowerCase();
+    const cleanEmail = identifier.toLowerCase();
+    // Enforce 1:1 uniqueness across all cadet accounts
+    for (const [key, existing] of users.entries()) {
+      if (key !== username && (existing.google_email?.toLowerCase() === cleanEmail || existing.email?.toLowerCase() === cleanEmail)) {
+        return res.status(409).json({
+          success: false,
+          message: `The Google account ${identifier} is already linked to cadet "${existing.username}". Each Google account can only belong to one cadet.`,
+        });
+      }
+    }
+    user.google_email = cleanEmail;
   }
 
   saveCadetUser(user);
@@ -1666,13 +1686,33 @@ app.get('/api/v1/auth/telegram/check-status', (req: Request, res: Response) => {
 
   if (record) {
     if (record.verified) {
+      const cleanFinalHandle = record.username.replace(/^@+/, '').trim().toLowerCase();
+      const users = loadCadetUsers();
+      let existingUser: RegisteredCadetUser | undefined;
+      for (const u of users.values()) {
+        if (
+          (u.telegram_username && u.telegram_username.toLowerCase() === cleanFinalHandle) ||
+          (record.tgId && u.id === `tg_${record.tgId}`)
+        ) {
+          existingUser = u;
+          break;
+        }
+      }
+
+      const canonicalId = existingUser ? existingUser.id : (record.tgId ? `tg_${record.tgId}` : `tg_${cleanFinalHandle}`);
+      const returnUsername = existingUser ? existingUser.username : (record.username.startsWith('@') ? record.username : `@${record.username}`);
+      const returnRole = existingUser ? existingUser.role : 'student';
+
       return res.json({
         success: true,
         verified: true,
         user: {
-          id: record.tgId || `tg_${record.username}`,
-          username: record.username.startsWith('@') ? record.username : `@${record.username}`,
+          id: canonicalId,
+          username: returnUsername,
           first_name: record.firstName || record.username,
+          role: returnRole,
+          google_email: existingUser?.google_email,
+          telegram_username: cleanFinalHandle,
           auth_date: Math.floor(Date.now() / 1000),
           is_webapp: false,
         },
@@ -1738,15 +1778,33 @@ app.post('/api/v1/auth/telegram/verify-code', (req: Request, res: Response) => {
   }
 
   const finalUsername = actualHandle || firstName || 'Cadet';
-  const canonicalId = tgId ? `tg_${tgId}` : `tg_${finalUsername.toLowerCase()}`;
+  const cleanFinalHandle = finalUsername.replace(/^@+/, '').trim().toLowerCase();
+  const users = loadCadetUsers();
+  let existingUser: RegisteredCadetUser | undefined;
+  for (const u of users.values()) {
+    if (
+      (u.telegram_username && u.telegram_username.toLowerCase() === cleanFinalHandle) ||
+      (tgId && u.id === `tg_${tgId}`)
+    ) {
+      existingUser = u;
+      break;
+    }
+  }
+
+  const canonicalId = existingUser ? existingUser.id : (tgId ? `tg_${tgId}` : `tg_${cleanFinalHandle}`);
+  const returnUsername = existingUser ? existingUser.username : `@${cleanFinalHandle}`;
+  const returnRole = existingUser ? existingUser.role : 'student';
 
   return res.json({
     success: true,
     verified: true,
     user: {
       id: canonicalId,
-      username: `@${finalUsername.replace(/^@+/, '')}`,
+      username: returnUsername,
       first_name: firstName || finalUsername,
+      role: returnRole,
+      google_email: existingUser?.google_email,
+      telegram_username: cleanFinalHandle,
       auth_date: Math.floor(Date.now() / 1000),
       is_webapp: false,
     },
@@ -1754,7 +1812,7 @@ app.post('/api/v1/auth/telegram/verify-code', (req: Request, res: Response) => {
 });
 
 async function handleTelegramUpdate(update: any, botToken?: string, appUrl?: string) {
-  const effectiveBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN;
+  const effectiveBotToken = botToken || process.env.TELEGRAM_BOT_TOKEN || '';
   const effectiveAppUrl = normalizeUrl(appUrl || process.env.APP_URL);
 
   // 1. Handle pre_checkout_query (Telegram Stars payment confirmation)
@@ -1971,7 +2029,11 @@ app.get('/api/v1/telegram/setup-webhook', async (req: Request, res: Response) =>
 
 // Automatic Telegram Bot Poller Daemon (Works in dev, railway, and servers without manual webhook)
 async function startTelegramPoller() {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN || '8761897858:AAGpW_aPC02Rg_W4t7Du8Y9SJOETZAVIgm8';
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
+    console.log('[Telegram Bot] TELEGRAM_BOT_TOKEN not configured in environment variables. Bot poller standing by.');
+    return;
+  }
   const appUrl = process.env.APP_URL || 'https://terminaltor-olive.vercel.app';
 
   // Auto-configure Telegram Chat Menu Button so "Play TERMINALTOR" appears in the bot automatically
