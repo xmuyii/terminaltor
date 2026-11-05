@@ -11,6 +11,7 @@ import DailyQuestsModal from './components/DailyQuestsModal';
 import CreditsModal from './components/CreditsModal';
 import TelegramAuthModal from './components/TelegramAuthModal';
 import { TelegramGateModal } from './components/TelegramGateModal';
+import DatabaseSchemaModal from './components/DatabaseSchemaModal';
 import SadisticGameMasterBubble from './components/SadisticGameMasterBubble';
 import { WifiOff, AlertTriangle, ShieldCheck, X, GraduationCap } from 'lucide-react';
 import ArcadePage from './pages/ArcadePage';
@@ -53,6 +54,7 @@ export default function App() {
   const [isDailyQuestsModalOpen, setIsDailyQuestsModalOpen] = useState(false);
   const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [isDatabaseModalOpen, setIsDatabaseModalOpen] = useState(false);
   const [isTelegramGateOpen, setIsTelegramGateOpen] = useState(() => !telegramAuth.hasActiveSession());
   const [streakProtectedBanner, setStreakProtectedBanner] = useState<string | null>(null);
   const [allianceUnlockedBanner, setAllianceUnlockedBanner] = useState<string | null>(null);
@@ -263,6 +265,7 @@ export default function App() {
         onOpenDailyQuestsModal={() => setIsDailyQuestsModalOpen(true)}
         onOpenCreditsModal={() => setIsCreditsModalOpen(true)}
         onOpenTelegramModal={() => setIsTelegramModalOpen(true)}
+        onOpenDatabaseModal={() => setIsDatabaseModalOpen(true)}
         onRoleChange={handleRoleChange}
       />
 
@@ -454,6 +457,13 @@ export default function App() {
           setIsTelegramModalOpen(false);
           setCurrentView('academy-signup');
         }}
+        onOpenDatabaseModal={() => setIsDatabaseModalOpen(true)}
+      />
+
+      {/* Supabase Schema and Connection Diagnostics Modal */}
+      <DatabaseSchemaModal
+        isOpen={isDatabaseModalOpen}
+        onClose={() => setIsDatabaseModalOpen(false)}
       />
 
       {/* Mandatory Telegram Gate: New players cannot start playing until connected via Telegram */}

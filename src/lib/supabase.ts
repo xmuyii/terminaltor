@@ -1,3 +1,4 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Profile, UserProgress, UserRole } from '../types';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error';
@@ -5,6 +6,43 @@ export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error';
 const STORAGE_KEY_PROFILE = 'sovereign_profile_v1';
 const STORAGE_KEY_PROGRESS = 'sovereign_progress_v1';
 const STORAGE_KEY_CODE = 'sovereign_saved_code_v1';
+
+// Read Supabase environment variables
+const rawUrl =
+  (import.meta.env.VITE_SUPABASE_URL as string) ||
+  (import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string) ||
+  '';
+const rawKey =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+  (import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ||
+  '';
+
+export const isSupabaseConfigured = (): boolean => {
+  return (
+    Boolean(rawUrl) &&
+    Boolean(rawKey) &&
+    !rawUrl.includes('your-project') &&
+    !rawKey.includes('placeholder')
+  );
+};
+
+export const getSupabaseConfig = () => {
+  return {
+    url: rawUrl,
+    hasKey: Boolean(rawKey && !rawKey.includes('placeholder')),
+    isConfigured: isSupabaseConfigured(),
+  };
+};
+
+// Initialize the real Supabase client singleton if environment keys are present
+export const supabase: SupabaseClient | null = isSupabaseConfigured()
+  ? createClient(rawUrl, rawKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  : null;
 
 const DEFAULT_PROFILE: Profile = {
   id: 'cadet_init',
@@ -23,8 +61,58 @@ const DEFAULT_PROFILE: Profile = {
 };
 
 class SupabaseStoreImpl {
-  private syncStatus: SyncStatus = 'synced';
+  private syncStatus: SyncStatus = isSupabaseConfigured() ? 'synced' : 'offline';
   private listeners: Array<(status: SyncStatus) => void> = [];
+
+  constructor() {
+    if (isSupabaseConfigured() && typeof window !== 'undefined') {
+      // Background initial sync of profile from Supabase
+      this.fetchRemoteProfile();
+    }
+  }
+
+  async fetchRemoteProfile(): Promise<Profile | null> {
+    if (!supabase) return null;
+    const local = this.getProfile();
+    if (!local || !local.id || local.id === 'cadet_init') return null;
+
+    try {
+      this.setSyncStatus('syncing');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', local.id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('[Supabase] Error fetching profile:', error.message);
+        this.setSyncStatus('error');
+        return null;
+      }
+
+      if (data) {
+        const merged: Profile = {
+          ...local,
+          username: data.username || local.username,
+          role: (data.role as UserRole) || local.role,
+          xp_points: typeof data.xp_points === 'number' ? data.xp_points : local.xp_points,
+          has_pro_pass: typeof data.has_pro_pass === 'boolean' ? data.has_pro_pass : local.has_pro_pass,
+          streak_days: data.streak_days || local.streak_days,
+          avatar_url: data.avatar_url || local.avatar_url,
+          telegram_username: data.telegram_username || local.telegram_username,
+          google_email: data.google_email || local.google_email,
+        };
+        localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(merged));
+        this.setSyncStatus('synced');
+        return merged;
+      }
+      this.setSyncStatus('synced');
+    } catch (e) {
+      console.warn('[Supabase] Remote profile fetch failed:', e);
+      this.setSyncStatus('error');
+    }
+    return null;
+  }
 
   getProfile(): Profile {
     if (typeof window === 'undefined') return DEFAULT_PROFILE;
@@ -66,6 +154,42 @@ class SupabaseStoreImpl {
         console.warn('Failed saving profile to storage:', e);
       }
     }
+
+    // Live Sync to Supabase
+    if (supabase && updated.id && updated.id !== 'cadet_init') {
+      this.setSyncStatus('syncing');
+      const payload: Record<string, any> = {
+        id: updated.id,
+        username: updated.username,
+        role: updated.role,
+        xp_points: updated.xp_points || 0,
+        has_pro_pass: Boolean(updated.has_pro_pass),
+        streak_days: updated.streak_days || 1,
+        avatar_url: updated.avatar_url || '',
+        telegram_username: updated.telegram_username || null,
+        google_email: updated.google_email || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      Promise.resolve(
+        supabase
+          .from('profiles')
+          .upsert(payload, { onConflict: 'id' })
+      )
+        .then(({ error }) => {
+          if (error) {
+            console.warn('[Supabase] Failed syncing profile:', error.message);
+            this.setSyncStatus('error');
+          } else {
+            this.setSyncStatus('synced');
+          }
+        })
+        .catch((err: unknown) => {
+          console.warn('[Supabase] Profile sync exception:', err);
+          this.setSyncStatus('error');
+        });
+    }
+
     return updated;
   }
 
@@ -99,7 +223,7 @@ class SupabaseStoreImpl {
     const all = this.getProgress();
     const current = all[questId] || {
       id: `prog_${questId}`,
-      user_id: 'student_demo',
+      user_id: this.getProfile().id,
       quest_id: questId,
       completed: false,
       score: 0,
@@ -113,6 +237,32 @@ class SupabaseStoreImpl {
         console.warn('Failed saving progress to storage:', e);
       }
     }
+
+    // Live sync progress to Supabase
+    if (supabase && updated.user_id && updated.user_id !== 'cadet_init') {
+      Promise.resolve(
+        supabase
+          .from('user_progress')
+          .upsert(
+            {
+              user_id: updated.user_id,
+              quest_id: questId,
+              completed: updated.completed,
+              score: updated.score || 0,
+              submitted_code: updated.submitted_code || null,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,quest_id' }
+          )
+      )
+        .then(({ error }) => {
+          if (error) {
+            console.warn('[Supabase] Failed syncing user_progress:', error.message);
+          }
+        })
+        .catch(() => {});
+    }
+
     return updated;
   }
 
@@ -180,3 +330,54 @@ class SupabaseStoreImpl {
 }
 
 export const SupabaseStore = new SupabaseStoreImpl();
+
+/**
+ * Diagnostic utility: checks live Supabase connectivity and schema accessibility
+ */
+export async function testSupabaseConnection(): Promise<{
+  configured: boolean;
+  url: string;
+  connected: boolean;
+  profilesAccessible: boolean;
+  message: string;
+  errorDetail?: string;
+}> {
+  if (!isSupabaseConfigured() || !supabase) {
+    return {
+      configured: false,
+      url: rawUrl || '(Not set)',
+      connected: false,
+      profilesAccessible: false,
+      message: 'Supabase credentials are not configured in environment variables (VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).',
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.from('profiles').select('id, username').limit(1);
+    if (error) {
+      return {
+        configured: true,
+        url: rawUrl,
+        connected: false,
+        profilesAccessible: false,
+        message: `Endpoint reached, but "profiles" table query returned: ${error.message}`,
+        errorDetail: error.details || error.hint || error.message,
+      };
+    }
+    return {
+      configured: true,
+      url: rawUrl,
+      connected: true,
+      profilesAccessible: true,
+      message: 'Connection successful! Verified read/write access to Supabase "profiles" table.',
+    };
+  } catch (err: any) {
+    return {
+      configured: true,
+      url: rawUrl,
+      connected: false,
+      profilesAccessible: false,
+      message: `Network error connecting to Supabase: ${err.message}`,
+    };
+  }
+}

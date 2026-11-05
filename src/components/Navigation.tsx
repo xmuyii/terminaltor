@@ -14,6 +14,7 @@ import {
   Gamepad2,
   Compass,
   Terminal,
+  Database,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 import { SupabaseStore, SyncStatus } from '../lib/supabase';
@@ -40,6 +41,7 @@ interface NavigationProps {
   onOpenDailyQuestsModal?: () => void;
   onOpenCreditsModal?: () => void;
   onOpenTelegramModal?: () => void;
+  onOpenDatabaseModal?: () => void;
   onRoleChange: (role: UserRole) => void;
 }
 
@@ -52,6 +54,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   onOpenDailyQuestsModal,
   onOpenCreditsModal,
   onOpenTelegramModal,
+  onOpenDatabaseModal,
   onRoleChange,
 }) => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => SupabaseStore.getSyncStatus());
@@ -238,6 +241,26 @@ export const Navigation: React.FC<NavigationProps> = ({
             <ArcadeCreditArt size={16} />
             <span className="text-cyan-300 font-extrabold">{typeof profile.credits === 'number' ? profile.credits : 150}</span>
             <span className="text-[10px] text-cyan-400/80 font-bold uppercase hidden sm:inline">Credits</span>
+          </button>
+
+          {/* Supabase Cloud Connection & Diagnostics */}
+          <button
+            type="button"
+            onClick={onOpenDatabaseModal}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500/50 rounded-xl text-slate-300 hover:text-emerald-300 text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            title="Supabase Database Connection & Diagnostics"
+          >
+            <Database className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden xl:inline text-[11px] font-mono">Supabase</span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                syncStatus === 'synced'
+                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                  : syncStatus === 'syncing'
+                  ? 'bg-amber-400 animate-pulse'
+                  : 'bg-slate-500'
+              }`}
+            />
           </button>
 
           {/* Telegram Login / Profile Button */}
