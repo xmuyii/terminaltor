@@ -17,6 +17,7 @@ import {
   Key,
   Trash2,
   Save,
+  Lock,
 } from 'lucide-react';
 import {
   isSupabaseConfigured,
@@ -150,10 +151,21 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
   const [inputKey, setInputKey] = useState('');
   const [saveFeedback, setSaveFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
+  const profile = SupabaseStore.getProfile();
+  const isPreAuthorized = profile.role === 'instructor' || profile.role === 'teacher' || profile.role === 'admin';
+  const [isUnlocked, setIsUnlocked] = useState(() => isPreAuthorized);
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [passcodeError, setPasscodeError] = useState<string | null>(null);
+
   const config = getSupabaseConfig();
 
   useEffect(() => {
     if (isOpen) {
+      const prof = SupabaseStore.getProfile();
+      if (prof.role === 'instructor' || prof.role === 'teacher' || prof.role === 'admin') {
+        setIsUnlocked(true);
+      }
+      setPasscodeError(null);
       setSyncFeedback(null);
       setSaveFeedback(null);
       const creds = getEffectiveSupabaseCredentials();
@@ -162,6 +174,16 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
       runDiagnostic();
     }
   }, [isOpen]);
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passcodeInput.trim() === 'INSTRUCTOR2026') {
+      setIsUnlocked(true);
+      setPasscodeError(null);
+    } else {
+      setPasscodeError('Invalid administrator passcode. Access denied.');
+    }
+  };
 
   const runDiagnostic = async () => {
     setIsTesting(true);
@@ -189,7 +211,7 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
       const testRes = await testSupabaseConnection(cleanUrl, cleanKey);
       setTestResult(testRes);
 
-      const saved = await saveCustomSupabaseConfig(cleanUrl, cleanKey);
+      const saved = await saveCustomSupabaseConfig(cleanUrl, cleanKey, passcodeInput || 'INSTRUCTOR2026');
       if (saved && testRes.connected) {
         setSaveFeedback({
           success: true,
@@ -279,20 +301,58 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
           </div>
         </div>
 
-        {/* Tabs Bar */}
-        <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-950 border-b border-slate-800 text-xs font-medium overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab('diagnostics')}
-            className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 ${
-              activeTab === 'diagnostics'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Wifi className="w-3.5 h-3.5" />
-            <span>Connection Diagnostics</span>
-          </button>
+        {!isUnlocked ? (
+          <div className="flex-1 flex items-center justify-center p-8 bg-[#070b14]">
+            <div className="max-w-md w-full p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl text-center space-y-4 animate-in fade-in zoom-in-95">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Administrator Access Required</h3>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  Database credentials, connection diagnostics, and schema migrations are protected. Only verified educators or administrators may view or change these details.
+                </p>
+              </div>
+
+              <form onSubmit={handleUnlock} className="space-y-3 pt-2">
+                <input
+                  type="password"
+                  value={passcodeInput}
+                  onChange={(e) => setPasscodeInput(e.target.value)}
+                  placeholder="Enter Admin Passcode"
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-center font-mono tracking-wider"
+                  autoFocus
+                />
+                {passcodeError && (
+                  <div className="text-xs text-rose-400 bg-rose-950/40 border border-rose-800/40 p-2.5 rounded-xl font-medium">
+                    {passcodeError}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer transition-all"
+                >
+                  Unlock Database Tools
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Tabs Bar */}
+            <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-950 border-b border-slate-800 text-xs font-medium overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setActiveTab('diagnostics')}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  activeTab === 'diagnostics'
+                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Wifi className="w-3.5 h-3.5" />
+                <span>Connection Diagnostics</span>
+              </button>
           <button
             type="button"
             onClick={() => setActiveTab('sql')}
@@ -611,6 +671,8 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
             </div>
           )}
         </div>
+      </>
+    )}
       </div>
     </div>
   );

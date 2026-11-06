@@ -552,18 +552,27 @@ export default function App() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px] font-medium">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-medium">
+            <button
+              type="button"
+              onClick={() => setIsDatabaseModalOpen(true)}
+              className="hover:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer text-slate-400 hover:text-white"
+            >
+              <span>Supabase Database &amp; SQL</span>
+            </button>
+            <span className="text-slate-800 hidden sm:inline">•</span>
             <button
               type="button"
               onClick={() => setCurrentView('academy-signup')}
-              className="hover:text-emerald-400 transition-colors"
+              className="hover:text-emerald-400 transition-colors cursor-pointer"
             >
               School Alliances (⭐️ 675 Stars/mo)
             </button>
+            <span className="text-slate-800 hidden sm:inline">•</span>
             <button
               type="button"
               onClick={() => setCurrentView('academy-join')}
-              className="hover:text-emerald-400 transition-colors"
+              className="hover:text-emerald-400 transition-colors cursor-pointer"
             >
               Have a School Code?
             </button>

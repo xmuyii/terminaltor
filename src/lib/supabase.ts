@@ -105,7 +105,11 @@ export function reinitSupabase(): SupabaseClient | null {
 // Initial client creation
 reinitSupabase();
 
-export async function saveCustomSupabaseConfig(url: string, anonKey: string): Promise<boolean> {
+export async function saveCustomSupabaseConfig(
+  url: string,
+  anonKey: string,
+  adminPasscode: string = 'INSTRUCTOR2026'
+): Promise<boolean> {
   if (typeof window !== 'undefined') {
     const cleanUrl = url.trim();
     const cleanKey = anonKey.trim();
@@ -114,11 +118,14 @@ export async function saveCustomSupabaseConfig(url: string, anonKey: string): Pr
       localStorage.setItem(STORAGE_KEY_CUSTOM_KEY, cleanKey);
     } catch {}
 
-    // Also persist to server backend
+    // Also persist to server backend with admin passcode verification
     try {
       await fetch('/api/v1/config/supabase', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': adminPasscode,
+        },
         body: JSON.stringify({ url: cleanUrl, anonKey: cleanKey }),
       });
     } catch {}

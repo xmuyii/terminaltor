@@ -823,7 +823,7 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
                       onClose();
                       onOpenDatabaseModal();
                     }}
-                    className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 active:scale-[0.99] border border-slate-700 text-emerald-300 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-2.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-[0.99] border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-300 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                   >
                     <Database className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Open Supabase Connection Diagnostics &amp; SQL</span>

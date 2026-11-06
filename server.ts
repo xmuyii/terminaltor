@@ -2070,8 +2070,18 @@ app.get('/api/v1/config/supabase', (_req: Request, res: Response) => {
   });
 });
 
-// POST /api/v1/config/supabase (Save or persist Supabase credentials)
+// POST /api/v1/config/supabase (Save or persist Supabase credentials - ADMIN ONLY)
 app.post('/api/v1/config/supabase', (req: Request, res: Response) => {
+  const adminPasscode = (req.headers['x-admin-passcode'] as string) || req.body?.adminPasscode;
+  const validPasscode = process.env.INSTRUCTOR_PASSCODE || 'INSTRUCTOR2026';
+
+  if (adminPasscode !== validPasscode) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized: Admin passcode required to modify database configuration.',
+    });
+  }
+
   const { url, anonKey } = req.body || {};
   if (!url || !anonKey) {
     return res.status(400).json({ success: false, message: 'URL and Anon Key are required.' });
