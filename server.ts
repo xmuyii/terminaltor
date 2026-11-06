@@ -4,6 +4,15 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env and .env.local
+dotenv.config();
+try {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+} catch {
+  // Ignore if .env.local missing
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -2025,6 +2034,79 @@ app.get('/api/v1/telegram/setup-webhook', async (req: Request, res: Response) =>
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// Runtime Supabase configuration state
+let runtimeSupabaseUrl = '';
+let runtimeSupabaseAnonKey = '';
+
+// GET /api/v1/config/supabase (Expose server-side Supabase credentials to client)
+app.get('/api/v1/config/supabase', (_req: Request, res: Response) => {
+  const url =
+    runtimeSupabaseUrl ||
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    '';
+  const anonKey =
+    runtimeSupabaseAnonKey ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    '';
+
+  const isConfigured = Boolean(
+    url &&
+    anonKey &&
+    !url.includes('your-project') &&
+    !anonKey.includes('placeholder')
+  );
+
+  return res.json({
+    configured: isConfigured,
+    url: url || '',
+    anonKey: anonKey || '',
+    source: runtimeSupabaseUrl ? 'runtime' : (process.env.VITE_SUPABASE_URL ? 'env' : 'none'),
+  });
+});
+
+// POST /api/v1/config/supabase (Save or persist Supabase credentials)
+app.post('/api/v1/config/supabase', (req: Request, res: Response) => {
+  const { url, anonKey } = req.body || {};
+  if (!url || !anonKey) {
+    return res.status(400).json({ success: false, message: 'URL and Anon Key are required.' });
+  }
+
+  runtimeSupabaseUrl = String(url).trim();
+  runtimeSupabaseAnonKey = String(anonKey).trim();
+
+  // Try persisting to .env.local if possible
+  try {
+    const envPath = path.resolve(process.cwd(), '.env.local');
+    let content = '';
+    if (fs.existsSync(envPath)) {
+      content = fs.readFileSync(envPath, 'utf8');
+    }
+    if (content.includes('VITE_SUPABASE_URL=')) {
+      content = content.replace(/VITE_SUPABASE_URL=.*/g, `VITE_SUPABASE_URL="${runtimeSupabaseUrl}"`);
+    } else {
+      content += `\nVITE_SUPABASE_URL="${runtimeSupabaseUrl}"`;
+    }
+    if (content.includes('VITE_SUPABASE_ANON_KEY=')) {
+      content = content.replace(/VITE_SUPABASE_ANON_KEY=.*/g, `VITE_SUPABASE_ANON_KEY="${runtimeSupabaseAnonKey}"`);
+    } else {
+      content += `\nVITE_SUPABASE_ANON_KEY="${runtimeSupabaseAnonKey}"`;
+    }
+    fs.writeFileSync(envPath, content.trim() + '\n', 'utf8');
+  } catch {
+    // If filesystem read-only, runtime in-memory cache keeps it active
+  }
+
+  return res.json({
+    success: true,
+    configured: true,
+    message: 'Supabase credentials saved successfully!',
+  });
 });
 
 // Automatic Telegram Bot Poller Daemon (Works in dev, railway, and servers without manual webhook)

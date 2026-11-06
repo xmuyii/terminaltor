@@ -14,12 +14,18 @@ import {
   Wifi,
   WifiOff,
   UploadCloud,
+  Key,
+  Trash2,
+  Save,
 } from 'lucide-react';
 import {
   isSupabaseConfigured,
   getSupabaseConfig,
   testSupabaseConnection,
   SupabaseStore,
+  saveCustomSupabaseConfig,
+  clearCustomSupabaseConfig,
+  getEffectiveSupabaseCredentials,
 } from '../lib/supabase';
 
 const SQL_MIGRATION_SCRIPT = `-- ============================================================================
@@ -140,12 +146,19 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
     errorDetail?: string;
   } | null>(null);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [inputUrl, setInputUrl] = useState('');
+  const [inputKey, setInputKey] = useState('');
+  const [saveFeedback, setSaveFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const config = getSupabaseConfig();
 
   useEffect(() => {
     if (isOpen) {
       setSyncFeedback(null);
+      setSaveFeedback(null);
+      const creds = getEffectiveSupabaseCredentials();
+      setInputUrl(creds.url || '');
+      setInputKey(creds.key || '');
       runDiagnostic();
     }
   }, [isOpen]);
@@ -158,6 +171,49 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
     } finally {
       setIsTesting(false);
     }
+  };
+
+  const handleSaveCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveFeedback(null);
+    const cleanUrl = inputUrl.trim();
+    const cleanKey = inputKey.trim();
+
+    if (!cleanUrl || !cleanKey) {
+      setSaveFeedback({ success: false, message: 'Both Supabase Project URL and Anon Key are required.' });
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      const testRes = await testSupabaseConnection(cleanUrl, cleanKey);
+      setTestResult(testRes);
+
+      const saved = await saveCustomSupabaseConfig(cleanUrl, cleanKey);
+      if (saved && testRes.connected) {
+        setSaveFeedback({
+          success: true,
+          message: 'Connected & saved successfully! Profiles and quest progress are now syncing to your PostgreSQL database.',
+        });
+      } else {
+        setSaveFeedback({
+          success: false,
+          message: `Saved credentials, but connection test returned: ${testRes.message}. (Ensure you have executed the SQL migration in Supabase).`,
+        });
+      }
+    } catch (err: any) {
+      setSaveFeedback({ success: false, message: err.message || 'Failed connecting to Supabase.' });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleClearCredentials = () => {
+    clearCustomSupabaseConfig();
+    setInputUrl('');
+    setInputKey('');
+    setSaveFeedback({ success: true, message: 'Custom credentials cleared. Reverted to offline mode.' });
+    setTimeout(runDiagnostic, 200);
   };
 
   const handleForceSyncProfile = async () => {
@@ -368,6 +424,96 @@ export const DatabaseSchemaModal: React.FC<DatabaseSchemaModalProps> = ({
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Direct Supabase Credentials Setup / In-Browser Override */}
+              <div className="p-5 bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-emerald-500/30 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Connect Supabase Credentials (Direct Input)
+                    </h4>
+                  </div>
+                  {config.isConfigured && (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      Active
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Enter your Supabase Project URL and Public Anon Key below to immediately link this browser session to PostgreSQL without needing to restart dev servers or edit configuration files:
+                </p>
+
+                <form onSubmit={handleSaveCredentials} className="space-y-3.5">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-400 font-mono">
+                      SUPABASE PROJECT URL:
+                    </label>
+                    <input
+                      type="url"
+                      value={inputUrl}
+                      onChange={(e) => setInputUrl(e.target.value)}
+                      placeholder="https://xyzcompany.supabase.co"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-400 font-mono">
+                      SUPABASE ANON PUBLIC KEY:
+                    </label>
+                    <input
+                      type="text"
+                      value={inputKey}
+                      onChange={(e) => setInputKey(e.target.value)}
+                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                      required
+                    />
+                  </div>
+
+                  {saveFeedback && (
+                    <div
+                      className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                        saveFeedback.success
+                          ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300'
+                          : 'bg-rose-950/60 border border-rose-800 text-rose-300'
+                      }`}
+                    >
+                      {saveFeedback.success ? (
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                      )}
+                      <span>{saveFeedback.message}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <button
+                      type="submit"
+                      disabled={isTesting}
+                      className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20 transition-all"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{isTesting ? 'Verifying & Saving...' : 'Save & Connect to Supabase'}</span>
+                    </button>
+
+                    {(inputUrl || inputKey) && (
+                      <button
+                        type="button"
+                        onClick={handleClearCredentials}
+                        className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-rose-300 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Clear</span>
+                      </button>
+                    )}
+                  </div>
+                </form>
               </div>
 
               {/* Why Tables Might Be Empty */}

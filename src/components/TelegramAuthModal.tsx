@@ -25,7 +25,7 @@ import { Profile, UserRole } from '../types';
 import { telegramAuth, TelegramUserData, getTelegramBotUsername } from '../lib/telegramAuth';
 import { accountAuth, AccountSession } from '../lib/accountAuth';
 import { SupabaseStore, isSupabaseConfigured } from '../lib/supabase';
-import { signInWithGooglePopup } from '../lib/firebaseGoogleAuth';
+import { signInWithGooglePopup, getUnauthorizedDomainInfo } from '../lib/firebaseGoogleAuth';
 
 interface TelegramAuthModalProps {
   isOpen: boolean;
@@ -183,9 +183,15 @@ export const TelegramAuthModal: React.FC<TelegramAuthModalProps> = ({
       setAccountSession(accountAuth.getSession());
       setIsLinkingGoogle(false);
       setLinkInput('');
-      setLinkFeedback(`Google account verified and linked: ${gAuth.email}!`);
     } catch (err: any) {
-      setLinkFeedback(err.message || 'Google account verification failed.');
+      if (err.code === 'auth/unauthorized-domain' || err.message?.includes('auth/unauthorized-domain')) {
+        const info = getUnauthorizedDomainInfo();
+        setLinkFeedback(
+          `Firebase: Domain "${info.domain}" is not authorized. Add it in Firebase Console > Authentication > Settings > Authorized domains, or enter your email into the box below to link directly.`
+        );
+      } else {
+        setLinkFeedback(err.message || 'Google account verification failed.');
+      }
     }
   };
 

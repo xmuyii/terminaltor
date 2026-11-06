@@ -16,12 +16,18 @@ import {
   User,
   Eye,
   EyeOff,
+  Copy,
+  AlertTriangle,
 } from 'lucide-react';
 import { telegramAuth, getTelegramBotUsername } from '../lib/telegramAuth';
 import { accountAuth } from '../lib/accountAuth';
 import { Profile } from '../types';
 import { SupabaseStore } from '../lib/supabase';
-import { signInWithGooglePopup } from '../lib/firebaseGoogleAuth';
+import {
+  signInWithGooglePopup,
+  getUnauthorizedDomainInfo,
+  UnauthorizedDomainInfo,
+} from '../lib/firebaseGoogleAuth';
 
 interface TelegramGateModalProps {
   isOpen: boolean;
@@ -55,6 +61,9 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
   const [verifiedHandle, setVerifiedHandle] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState('');
   const [waitingForBot, setWaitingForBot] = useState(false);
+  const [unauthorizedDomainInfo, setUnauthorizedDomainInfo] = useState<UnauthorizedDomainInfo | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+  const [fallbackGoogleEmail, setFallbackGoogleEmail] = useState('');
 
   const widgetContainerRef = useRef<HTMLDivElement>(null);
   const botUsername = getTelegramBotUsername();
@@ -278,6 +287,7 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
   // Real Google Sign-In with Google Services & Firebase
   const handleGoogleSignIn = async () => {
     setError(null);
+    setUnauthorizedDomainInfo(null);
     setIsSubmitting(true);
 
     try {
@@ -306,7 +316,49 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
       }
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
-      setError(err?.message || 'Google account verification failed.');
+      if (err.code === 'auth/unauthorized-domain' || err.message?.includes('auth/unauthorized-domain')) {
+        const info = getUnauthorizedDomainInfo();
+        setUnauthorizedDomainInfo(info);
+        setError(`Domain "${info.domain}" is not authorized in Firebase Console.`);
+      } else {
+        setError(err?.message || 'Google account verification failed.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Direct Google Email Login fallback (when domain isn't authorized yet in Firebase)
+  const handleDirectGoogleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = fallbackGoogleEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please enter a valid Google email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await accountAuth.loginWithGoogle({
+        email: cleanEmail,
+        desiredUsername: usernameInput.trim() || undefined,
+      });
+
+      if (result.success && result.session) {
+        setSuccessMessage(`Google account set: ${cleanEmail}! Entering TERMINALTOR...`);
+        setIsAutoDetected(true);
+        setVerifiedHandle(result.session.username);
+        const updatedProfile = SupabaseStore.getProfile();
+        setTimeout(() => {
+          onAuthenticated(updatedProfile);
+        }, 700);
+      } else {
+        setError(result.message || 'Direct Google email setup failed.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed connecting with Google email.');
     } finally {
       setIsSubmitting(false);
     }
@@ -439,6 +491,94 @@ export const TelegramGateModal: React.FC<TelegramGateModalProps> = ({
                 <div className="text-[10px] text-center text-slate-400 font-mono">
                   Verified with Google services • Instant cadet setup
                 </div>
+
+                {/* Unauthorized Domain Diagnostic & Fast-Path Card */}
+                {unauthorizedDomainInfo && (
+                  <div className="mt-2.5 p-3.5 bg-amber-950/40 border border-amber-500/40 rounded-2xl space-y-3 animate-in fade-in duration-200 text-left">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="text-xs font-bold text-amber-300">
+                          Firebase Setup: Authorized Domain Required
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                          Firebase blocked authentication because this host (<span className="text-amber-200 font-mono font-semibold">{unauthorizedDomainInfo.domain}</span>) is not yet on your Firebase project's Authorized Domains list.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Domain copy & console link */}
+                    <div className="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-slate-400">Your Current Host:</span>
+                        <span className="text-amber-300 font-bold select-all truncate max-w-[220px]">
+                          {unauthorizedDomainInfo.domain}
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof navigator !== 'undefined') {
+                              navigator.clipboard.writeText(unauthorizedDomainInfo.domain);
+                              setCopiedDomain(true);
+                              setTimeout(() => setCopiedDomain(false), 2000);
+                            }
+                          }}
+                          className="flex-1 py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          {copiedDomain ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedDomain ? 'Copied Host!' : 'Copy Host'}</span>
+                        </button>
+
+                        <a
+                          href={unauthorizedDomainInfo.consoleUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-1.5 px-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-[11px] rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <span>Firebase Console</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+
+                      <ol className="text-[10px] text-slate-400 space-y-0.5 list-decimal list-inside pt-1 border-t border-slate-800/80">
+                        <li>Open Firebase Console Settings</li>
+                        <li>Under <strong>Authorized domains</strong>, click <strong>Add domain</strong></li>
+                        <li>Paste <code className="text-amber-300 font-mono">{unauthorizedDomainInfo.domain}</code> and save</li>
+                      </ol>
+                    </div>
+
+                    {/* Immediate direct sign-in while authorizing */}
+                    <div className="p-2.5 bg-emerald-950/30 rounded-xl border border-emerald-500/30 space-y-2">
+                      <div className="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Instant Access (Skip Waiting):</span>
+                      </div>
+                      <p className="text-[10px] text-slate-300">
+                        Enter your Google email directly to start playing right away:
+                      </p>
+                      <form onSubmit={handleDirectGoogleLogin} className="flex gap-2">
+                        <input
+                          type="email"
+                          value={fallbackGoogleEmail}
+                          onChange={(e) => setFallbackGoogleEmail(e.target.value)}
+                          placeholder="cadet@gmail.com"
+                          className="flex-1 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
+                          required
+                        />
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-lg transition-colors cursor-pointer shrink-0"
+                        >
+                          Enter
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 my-1">

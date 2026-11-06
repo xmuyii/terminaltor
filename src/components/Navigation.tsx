@@ -67,7 +67,14 @@ export const Navigation: React.FC<NavigationProps> = ({
     };
 
     window.addEventListener('sovereign_sync_status_updated', handleSyncStatus);
-    return () => window.removeEventListener('sovereign_sync_status_updated', handleSyncStatus);
+    const unsubscribe = SupabaseStore.onSyncStatusChange((status) => {
+      setSyncStatus(status);
+    });
+
+    return () => {
+      window.removeEventListener('sovereign_sync_status_updated', handleSyncStatus);
+      unsubscribe();
+    };
   }, []);
 
   const handleMobileNav = (view: AppView) => {

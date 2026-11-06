@@ -69,12 +69,38 @@ export const signInWithGooglePopup = async (): Promise<GoogleAuthResult> => {
       throw new Error('Sign-in popup was blocked by your browser. Please allow popups.');
     } else if (error.code === 'auth/cancelled-popup-request') {
       throw new Error('Sign-in attempt was interrupted. Please click to try again.');
+    } else if (error.code === 'auth/unauthorized-domain' || error.message?.includes('auth/unauthorized-domain')) {
+      const info = getUnauthorizedDomainInfo();
+      const customErr: any = new Error(
+        `Firebase: auth/unauthorized-domain. Domain "${info.domain}" is not authorized in Firebase Console.`
+      );
+      customErr.code = 'auth/unauthorized-domain';
+      customErr.domain = info.domain;
+      customErr.consoleUrl = info.consoleUrl;
+      customErr.projectId = info.projectId;
+      throw customErr;
     }
     throw new Error(error.message || 'Google account verification failed.');
   } finally {
     isSigningIn = false;
   }
 };
+
+export interface UnauthorizedDomainInfo {
+  domain: string;
+  projectId: string;
+  consoleUrl: string;
+}
+
+export function getUnauthorizedDomainInfo(): UnauthorizedDomainInfo {
+  const domain = typeof window !== 'undefined' ? window.location.hostname : 'your-domain.com';
+  const projectId = firebaseConfig?.projectId || 'gen-lang-client-0494352241';
+  return {
+    domain,
+    projectId,
+    consoleUrl: `https://console.firebase.google.com/project/${projectId}/authentication/settings`,
+  };
+}
 
 /**
  * Signs the user out of the Firebase Google session and clears the in-memory token.

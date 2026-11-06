@@ -7,42 +7,162 @@ const STORAGE_KEY_PROFILE = 'sovereign_profile_v1';
 const STORAGE_KEY_PROGRESS = 'sovereign_progress_v1';
 const STORAGE_KEY_CODE = 'sovereign_saved_code_v1';
 
-// Read Supabase environment variables
-const rawUrl =
-  (import.meta.env.VITE_SUPABASE_URL as string) ||
-  (import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string) ||
-  '';
-const rawKey =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
-  (import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ||
-  '';
+const STORAGE_KEY_CUSTOM_URL = 'sovereign_custom_supabase_url';
+const STORAGE_KEY_CUSTOM_KEY = 'sovereign_custom_supabase_key';
+
+export function getEffectiveSupabaseCredentials(): { url: string; key: string; source: string } {
+  // 1. Check custom user input from localStorage (immediate client-side priority)
+  if (typeof window !== 'undefined') {
+    try {
+      const customUrl = localStorage.getItem(STORAGE_KEY_CUSTOM_URL);
+      const customKey = localStorage.getItem(STORAGE_KEY_CUSTOM_KEY);
+      if (
+        customUrl &&
+        customKey &&
+        !customUrl.includes('your-project') &&
+        !customKey.includes('placeholder')
+      ) {
+        return { url: customUrl.trim(), key: customKey.trim(), source: 'custom_browser' };
+      }
+    } catch {}
+  }
+
+  // 2. Check window runtime config (e.g. from server template or fetch)
+  if (typeof window !== 'undefined' && (window as any).__SOVEREIGN_SUPABASE_CONFIG__) {
+    const cfg = (window as any).__SOVEREIGN_SUPABASE_CONFIG__;
+    if (cfg.url && cfg.key && !cfg.url.includes('your-project') && !cfg.key.includes('placeholder')) {
+      return { url: String(cfg.url).trim(), key: String(cfg.key).trim(), source: 'server_runtime' };
+    }
+  }
+
+  // 3. Check Vite import.meta.env across all possible naming conventions
+  const metaUrl =
+    (import.meta.env.VITE_SUPABASE_URL as string) ||
+    ((import.meta.env as any).SUPABASE_URL as string) ||
+    (import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string) ||
+    (typeof process !== 'undefined' ? ((process.env?.VITE_SUPABASE_URL || process.env?.SUPABASE_URL) as string) : '') ||
+    '';
+
+  const metaKey =
+    (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+    ((import.meta.env as any).SUPABASE_ANON_KEY as string) ||
+    (import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ||
+    (typeof process !== 'undefined' ? ((process.env?.VITE_SUPABASE_ANON_KEY || process.env?.SUPABASE_ANON_KEY) as string) : '') ||
+    '';
+
+  if (metaUrl && metaKey && !metaUrl.includes('your-project') && !metaKey.includes('placeholder')) {
+    return { url: metaUrl.trim(), key: metaKey.trim(), source: 'env' };
+  }
+
+  return { url: metaUrl.trim(), key: metaKey.trim(), source: 'none' };
+}
 
 export const isSupabaseConfigured = (): boolean => {
+  const creds = getEffectiveSupabaseCredentials();
   return (
-    Boolean(rawUrl) &&
-    Boolean(rawKey) &&
-    !rawUrl.includes('your-project') &&
-    !rawKey.includes('placeholder')
+    Boolean(creds.url) &&
+    Boolean(creds.key) &&
+    !creds.url.includes('your-project') &&
+    !creds.key.includes('placeholder')
   );
 };
 
 export const getSupabaseConfig = () => {
+  const creds = getEffectiveSupabaseCredentials();
   return {
-    url: rawUrl,
-    hasKey: Boolean(rawKey && !rawKey.includes('placeholder')),
+    url: creds.url,
+    hasKey: Boolean(creds.key && !creds.key.includes('placeholder')),
     isConfigured: isSupabaseConfigured(),
+    source: creds.source,
   };
 };
 
-// Initialize the real Supabase client singleton if environment keys are present
-export const supabase: SupabaseClient | null = isSupabaseConfigured()
-  ? createClient(rawUrl, rawKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
+// Mutable Supabase client singleton
+export let supabase: SupabaseClient | null = null;
+
+export function reinitSupabase(): SupabaseClient | null {
+  const creds = getEffectiveSupabaseCredentials();
+  if (creds.url && creds.key && !creds.url.includes('your-project') && !creds.key.includes('placeholder')) {
+    try {
+      supabase = createClient(creds.url, creds.key, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+        },
+      });
+      return supabase;
+    } catch (e) {
+      console.warn('[Supabase] Failed initializing client:', e);
+      supabase = null;
+      return null;
+    }
+  } else {
+    supabase = null;
+    return null;
+  }
+}
+
+// Initial client creation
+reinitSupabase();
+
+export async function saveCustomSupabaseConfig(url: string, anonKey: string): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    const cleanUrl = url.trim();
+    const cleanKey = anonKey.trim();
+    try {
+      localStorage.setItem(STORAGE_KEY_CUSTOM_URL, cleanUrl);
+      localStorage.setItem(STORAGE_KEY_CUSTOM_KEY, cleanKey);
+    } catch {}
+
+    // Also persist to server backend
+    try {
+      await fetch('/api/v1/config/supabase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanUrl, anonKey: cleanKey }),
+      });
+    } catch {}
+
+    reinitSupabase();
+    if (supabase) {
+      SupabaseStore.setSyncStatus('synced');
+      SupabaseStore.fetchRemoteProfile();
+      return true;
+    }
+  }
+  return false;
+}
+
+export function clearCustomSupabaseConfig(): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(STORAGE_KEY_CUSTOM_URL);
+      localStorage.removeItem(STORAGE_KEY_CUSTOM_KEY);
+      if ((window as any).__SOVEREIGN_SUPABASE_CONFIG__) {
+        delete (window as any).__SOVEREIGN_SUPABASE_CONFIG__;
+      }
+    } catch {}
+    reinitSupabase();
+    SupabaseStore.setSyncStatus('offline');
+  }
+}
+
+// Auto-fetch server-side Supabase credentials on boot
+if (typeof window !== 'undefined') {
+  fetch('/api/v1/config/supabase')
+    .then((r) => r.json())
+    .then((data) => {
+      if (data && data.configured && data.url && data.anonKey) {
+        (window as any).__SOVEREIGN_SUPABASE_CONFIG__ = { url: data.url, key: data.anonKey };
+        reinitSupabase();
+        if (supabase) {
+          SupabaseStore.setSyncStatus('synced');
+          SupabaseStore.fetchRemoteProfile();
+        }
+      }
     })
-  : null;
+    .catch(() => {});
+}
 
 const DEFAULT_PROFILE: Profile = {
   id: 'cadet_init',
@@ -326,6 +446,9 @@ class SupabaseStoreImpl {
   setSyncStatus(status: SyncStatus) {
     this.syncStatus = status;
     this.listeners.forEach((cb) => cb(status));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sovereign_sync_status_updated', { detail: status }));
+    }
   }
 }
 
@@ -334,7 +457,7 @@ export const SupabaseStore = new SupabaseStoreImpl();
 /**
  * Diagnostic utility: checks live Supabase connectivity and schema accessibility
  */
-export async function testSupabaseConnection(): Promise<{
+export async function testSupabaseConnection(candidateUrl?: string, candidateKey?: string): Promise<{
   configured: boolean;
   url: string;
   connected: boolean;
@@ -342,22 +465,48 @@ export async function testSupabaseConnection(): Promise<{
   message: string;
   errorDetail?: string;
 }> {
-  if (!isSupabaseConfigured() || !supabase) {
+  const creds = getEffectiveSupabaseCredentials();
+  const targetUrl = (candidateUrl || creds.url || '').trim();
+  const targetKey = (candidateKey || creds.key || '').trim();
+
+  const isConfigured = Boolean(
+    targetUrl &&
+    targetKey &&
+    !targetUrl.includes('your-project') &&
+    !targetKey.includes('placeholder')
+  );
+
+  if (!isConfigured) {
     return {
       configured: false,
-      url: rawUrl || '(Not set)',
+      url: targetUrl || '(Not set)',
       connected: false,
       profilesAccessible: false,
       message: 'Supabase credentials are not configured in environment variables (VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).',
     };
   }
 
+  let testClient: SupabaseClient;
   try {
-    const { data, error } = await supabase.from('profiles').select('id, username').limit(1);
+    testClient = candidateUrl && candidateKey
+      ? createClient(targetUrl, targetKey)
+      : (supabase || createClient(targetUrl, targetKey));
+  } catch (err: any) {
+    return {
+      configured: true,
+      url: targetUrl,
+      connected: false,
+      profilesAccessible: false,
+      message: `Invalid Supabase URL or key format: ${err.message}`,
+    };
+  }
+
+  try {
+    const { data, error } = await testClient.from('profiles').select('id, username').limit(1);
     if (error) {
       return {
         configured: true,
-        url: rawUrl,
+        url: targetUrl,
         connected: false,
         profilesAccessible: false,
         message: `Endpoint reached, but "profiles" table query returned: ${error.message}`,
@@ -366,7 +515,7 @@ export async function testSupabaseConnection(): Promise<{
     }
     return {
       configured: true,
-      url: rawUrl,
+      url: targetUrl,
       connected: true,
       profilesAccessible: true,
       message: 'Connection successful! Verified read/write access to Supabase "profiles" table.',
@@ -374,7 +523,7 @@ export async function testSupabaseConnection(): Promise<{
   } catch (err: any) {
     return {
       configured: true,
-      url: rawUrl,
+      url: targetUrl,
       connected: false,
       profilesAccessible: false,
       message: `Network error connecting to Supabase: ${err.message}`,
