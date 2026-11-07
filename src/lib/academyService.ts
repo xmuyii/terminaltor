@@ -47,65 +47,81 @@ export interface MonthlyAcademyStanding {
   tier?: string;
 }
 
-export const DEFAULT_ACADEMY: AcademyRecord = {
-  id: 'acad_lagos_high',
-  name: 'Lagos Tech High Alliance',
-  joinCode: 'LOV300',
-  join_code: 'LOV300',
-  membersCount: 42,
-  maxMembers: 100,
-  seat_cap: 100,
-  seats_total: 100,
-  next_billing_date: 'Nov 15, 2026',
-  leaderId: 'u_ada',
-  owner_id: 'u_ada',
-  leaderName: 'AdaLovelace',
-  points: 48950,
-  tier: 'premium',
-  subscription_plan: 'premium',
-  description: 'Premier West African cyber guild focusing on algorithms, backend infrastructure, and sovereign cryptography.',
-  created_at: '2026-01-15T00:00:00Z',
-};
+const STORAGE_ACADEMIES_LIST = 'sovereign_academies_list_v2';
+const STORAGE_MY_ACADEMY = 'sovereign_my_academy_v2';
+const STORAGE_ACADEMY_MEMBERS_PREFIX = 'sovereign_acad_members_v2_';
 
-export const DEFAULT_MEMBERS: AcademyMemberRecord[] = [
-  { id: 'm1', userId: 'u_ada', user_id: 'u_ada', username: 'AdaLovelace', role: 'leader', points: 3840, xp_points: 3840, challenges_solved: 38, last_active: '15m ago', joined_at: 'Jan 2026' },
-  { id: 'm2', userId: 'u_alan', user_id: 'u_alan', username: 'AlanTuring', role: 'officer', points: 3120, xp_points: 3120, challenges_solved: 31, last_active: '1h ago', joined_at: 'Feb 2026' },
-  { id: 'm4', userId: 'u_margaret', user_id: 'u_margaret', username: 'MargaretHamilton', role: 'officer', points: 2450, xp_points: 2450, challenges_solved: 24, last_active: 'Yesterday', joined_at: 'Feb 2026' },
-];
-
-export const CURRENT_MONTH_STANDINGS: MonthlyAcademyStanding[] = [
-  { rank: 1, academyId: 'acad_lagos_high', academyName: 'Lagos Tech High Alliance', name: 'Lagos Tech High Alliance', points: 48950, membersCount: 42, activeStudents: 42, challengesSolved: 342, badge: '👑 Champions', tier: 'premium' },
-  { rank: 2, academyId: 'acad_sovereign', academyName: 'Sovereign Core Guild', name: 'Sovereign Core Guild', points: 41200, membersCount: 38, activeStudents: 38, challengesSolved: 290, badge: '🥈 Contenders', tier: 'premium' },
-  { rank: 3, academyId: 'acad_apollo', academyName: 'Apollo Engineering Academy', name: 'Apollo Engineering Academy', points: 36700, membersCount: 30, activeStudents: 30, challengesSolved: 240, badge: '🥉 Vanguard', tier: 'pro' },
-  { rank: 4, academyId: 'acad_navy', academyName: 'Navy Tech Alliance', name: 'Navy Tech Alliance', points: 31500, membersCount: 25, activeStudents: 25, challengesSolved: 210, tier: 'pro' },
-  { rank: 5, academyId: 'acad_bell', academyName: 'Bell Labs Cohort', name: 'Bell Labs Cohort', points: 27800, membersCount: 22, activeStudents: 22, challengesSolved: 180, tier: 'free' },
-];
-
-export const LAST_MONTH_STANDINGS: MonthlyAcademyStanding[] = [
-  { rank: 1, academyId: 'acad_sovereign', academyName: 'Sovereign Core Guild', name: 'Sovereign Core Guild', points: 52400, membersCount: 40, activeStudents: 40, challengesSolved: 410, badge: '👑 Winner', tier: 'premium' },
-  { rank: 2, academyId: 'acad_lagos_high', academyName: 'Lagos Tech High Alliance', name: 'Lagos Tech High Alliance', points: 49800, membersCount: 41, activeStudents: 41, challengesSolved: 380, badge: '🥈 Finalist', tier: 'premium' },
-  { rank: 3, academyId: 'acad_apollo', academyName: 'Apollo Engineering Academy', name: 'Apollo Engineering Academy', points: 34100, membersCount: 28, activeStudents: 28, challengesSolved: 230, badge: '🥉 Bronze', tier: 'pro' },
-];
+// Purge any legacy preseeded Lagos Tech High from localStorage
+if (typeof window !== 'undefined') {
+  try {
+    const legacy = localStorage.getItem('sovereign_my_academy');
+    if (legacy && (legacy.includes('acad_lagos_high') || legacy.includes('Lagos Tech High'))) {
+      localStorage.removeItem('sovereign_my_academy');
+    }
+    const legacyList = localStorage.getItem('sovereign_academies_list');
+    if (legacyList && (legacyList.includes('acad_lagos_high') || legacyList.includes('Lagos Tech High'))) {
+      localStorage.removeItem('sovereign_academies_list');
+    }
+  } catch {}
+}
 
 class AcademyService {
+  private getStoredAcademies(): AcademyRecord[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const data = localStorage.getItem(STORAGE_ACADEMIES_LIST);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((a) => a.id !== 'acad_lagos_high' && a.name !== 'Lagos Tech High Alliance');
+        }
+      }
+    } catch {}
+    return [];
+  }
+
+  private saveStoredAcademies(list: AcademyRecord[]): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(STORAGE_ACADEMIES_LIST, JSON.stringify(list));
+    } catch {}
+  }
+
   getCurrentMonthLeaderboard(): MonthlyAcademyStanding[] {
-    return CURRENT_MONTH_STANDINGS;
+    const academies = this.getStoredAcademies();
+    return academies
+      .map((a, i) => ({
+        rank: i + 1,
+        academyId: a.id,
+        academyName: a.name,
+        name: a.name,
+        points: a.points || 0,
+        membersCount: a.membersCount || 1,
+        activeStudents: a.membersCount || 1,
+        challengesSolved: Math.round((a.points || 0) / 25),
+        badge: i === 0 ? '👑 Champions' : i === 1 ? '🥈 Finalist' : undefined,
+        tier: a.tier || 'pro',
+      }))
+      .sort((a, b) => b.points - a.points);
   }
 
   getLastMonthLeaderboard(): MonthlyAcademyStanding[] {
-    return LAST_MONTH_STANDINGS;
+    return [];
   }
 
-  async getEffectiveTier(userId: string, hasProPass: boolean): Promise<{ source: 'academy' | 'individual' | 'free'; tier: 'premium' | 'pro' | 'free'; academyName?: string }> {
+  async getEffectiveTier(
+    userId: string,
+    hasProPass: boolean
+  ): Promise<{ source: 'academy' | 'individual' | 'free'; tier: 'premium' | 'pro' | 'free'; academyName?: string }> {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sovereign_my_academy');
+      const stored = localStorage.getItem(STORAGE_MY_ACADEMY);
       if (stored) {
         try {
           const acad = JSON.parse(stored);
-          if (acad && acad.id) {
+          if (acad && acad.id && acad.id !== 'acad_lagos_high' && acad.name !== 'Lagos Tech High Alliance') {
             return {
               source: 'academy',
-              tier: acad.tier || 'premium',
+              tier: (acad.tier as 'premium' | 'pro') || 'pro',
               academyName: acad.name,
             };
           }
@@ -118,37 +134,51 @@ class AcademyService {
     return { source: 'free', tier: 'free' };
   }
 
-  async getAcademy(id?: string): Promise<AcademyRecord> {
-    return DEFAULT_ACADEMY;
+  async getAcademy(id?: string): Promise<AcademyRecord | null> {
+    const academies = this.getStoredAcademies();
+    if (id) {
+      return academies.find((a) => a.id === id) || null;
+    }
+    const my = await this.getMyEnrolledAcademy();
+    return my ? my.academy : academies[0] || null;
   }
 
   async getAcademyById(id: string): Promise<AcademyRecord | null> {
-    return DEFAULT_ACADEMY;
+    const academies = this.getStoredAcademies();
+    return academies.find((a) => a.id === id) || null;
   }
 
   async getAcademies(): Promise<AcademyRecord[]> {
-    return [DEFAULT_ACADEMY];
+    return this.getStoredAcademies();
   }
 
   async getAcademyMembers(id: string): Promise<AcademyMemberRecord[]> {
-    return DEFAULT_MEMBERS;
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(`${STORAGE_ACADEMY_MEMBERS_PREFIX}${id}`);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {}
+    return [];
   }
 
   async getMembers(id?: string): Promise<AcademyMemberRecord[]> {
-    return DEFAULT_MEMBERS;
+    if (!id) return [];
+    return this.getAcademyMembers(id);
   }
 
   async getMonthlyStandings(): Promise<MonthlyAcademyStanding[]> {
-    return CURRENT_MONTH_STANDINGS;
+    return this.getCurrentMonthLeaderboard();
   }
 
   async getMyEnrolledAcademy(userId?: string): Promise<{ academy: AcademyRecord } | null> {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sovereign_my_academy');
+      const stored = localStorage.getItem(STORAGE_MY_ACADEMY);
       if (stored) {
         try {
-          const acad = JSON.parse(stored);
-          if (acad && acad.id) {
+          const acad: AcademyRecord = JSON.parse(stored);
+          if (acad && acad.id && acad.id !== 'acad_lagos_high' && acad.name !== 'Lagos Tech High Alliance') {
             return { academy: acad };
           }
         } catch {}
@@ -158,19 +188,66 @@ class AcademyService {
   }
 
   async getAcademyByJoinCode(code: string): Promise<AcademyRecord | null> {
-    return DEFAULT_ACADEMY;
+    const cleanCode = code.trim().toUpperCase();
+    const academies = this.getStoredAcademies();
+    return (
+      academies.find(
+        (a) => (a.join_code && a.join_code.toUpperCase() === cleanCode) || (a.joinCode && a.joinCode.toUpperCase() === cleanCode)
+      ) || null
+    );
   }
 
   async createAcademy(data: Partial<AcademyRecord>): Promise<AcademyRecord> {
-    const acad: AcademyRecord = {
-      ...DEFAULT_ACADEMY,
-      ...data,
+    const joinCode = `ACAD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newAcad: AcademyRecord = {
       id: `acad_${Date.now()}`,
-      join_code: data.join_code || data.joinCode || 'ACAD-' + Math.floor(100 + Math.random() * 900),
-      subscription_plan: data.plan || data.subscription_plan || 'pro',
+      name: data.name || 'Custom Academy Alliance',
+      joinCode,
+      join_code: joinCode,
+      membersCount: 1,
+      maxMembers: data.plan === 'pro' ? 100 : 30,
+      seat_cap: data.plan === 'pro' ? 100 : 30,
+      seats_total: data.plan === 'pro' ? 100 : 30,
+      next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      owner_id: data.owner_id || 'usr_academy_owner',
+      leaderId: data.owner_id || 'usr_academy_owner',
+      points: 0,
+      tier: (data.plan as 'premium' | 'pro') || 'pro',
+      subscription_plan: data.plan || 'pro',
+      billing_email: data.billing_email || '',
+      paystack_ref: data.paystack_ref || `STARS_${Date.now()}`,
+      description: data.description || 'Verified educational academy alliance on TERMINALTOR.',
       created_at: new Date().toISOString(),
     };
-    return acad;
+
+    const existing = this.getStoredAcademies();
+    existing.push(newAcad);
+    this.saveStoredAcademies(existing);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_MY_ACADEMY, JSON.stringify(newAcad));
+        const leaderMember: AcademyMemberRecord = {
+          id: `mem_${Date.now()}`,
+          userId: newAcad.owner_id,
+          user_id: newAcad.owner_id,
+          username: 'Academy Owner',
+          role: 'leader',
+          points: 0,
+          xp_points: 0,
+          challenges_solved: 0,
+          last_active: 'Just now',
+          joined_at: new Date().toISOString(),
+        };
+        localStorage.setItem(`${STORAGE_ACADEMY_MEMBERS_PREFIX}${newAcad.id}`, JSON.stringify([leaderMember]));
+      } catch {}
+    }
+
+    return newAcad;
   }
 
   async joinAcademy(
@@ -178,17 +255,63 @@ class AcademyService {
     userId?: string,
     username?: string
   ): Promise<{ success: boolean; message: string; academy?: AcademyRecord; error?: string }> {
-    if (joinCode.toUpperCase() === 'LOV300' || joinCode.trim().length > 0) {
-      return { success: true, message: `Joined ${DEFAULT_ACADEMY.name}!`, academy: DEFAULT_ACADEMY };
+    const clean = joinCode.trim().toUpperCase();
+    const academy = await this.getAcademyByJoinCode(clean);
+
+    if (!academy) {
+      return {
+        success: false,
+        message: 'Invalid academy invite code. No active alliance matches this code.',
+        error: 'Invalid academy invite code.',
+      };
     }
-    return { success: false, message: 'Invalid academy invite code.', error: 'Invalid academy invite code.' };
+
+    // Add member
+    const currentMembers = await this.getAcademyMembers(academy.id);
+    const existing = currentMembers.find((m) => m.userId === userId || m.user_id === userId);
+
+    if (!existing) {
+      const newMember: AcademyMemberRecord = {
+        id: `mem_${Date.now()}`,
+        userId: userId || `u_${Date.now()}`,
+        user_id: userId || `u_${Date.now()}`,
+        username: username || 'Cadet',
+        role: 'cadet',
+        points: 0,
+        xp_points: 0,
+        challenges_solved: 0,
+        last_active: 'Just now',
+        joined_at: new Date().toISOString(),
+      };
+      currentMembers.push(newMember);
+      academy.membersCount = currentMembers.length;
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${STORAGE_ACADEMY_MEMBERS_PREFIX}${academy.id}`, JSON.stringify(currentMembers));
+        localStorage.setItem(STORAGE_MY_ACADEMY, JSON.stringify(academy));
+      }
+    }
+
+    return {
+      success: true,
+      message: `Successfully joined ${academy.name}!`,
+      academy,
+    };
   }
 
   async removeMember(academyId: string, memberUserId: string): Promise<boolean> {
+    const members = await this.getAcademyMembers(academyId);
+    const filtered = members.filter((m) => m.userId !== memberUserId && m.user_id !== memberUserId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${STORAGE_ACADEMY_MEMBERS_PREFIX}${academyId}`, JSON.stringify(filtered));
+    }
     return true;
   }
 
   async leaveAcademy(userId: string): Promise<{ success: boolean; message: string }> {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_MY_ACADEMY);
+    }
     return { success: true, message: 'Successfully departed the academy.' };
   }
 }

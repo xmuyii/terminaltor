@@ -54,94 +54,160 @@ export interface CohortHintActivity {
   stuck_students: Array<{ student_name: string; quest_id: string; hints_used: number }>;
 }
 
-const DEFAULT_COHORT: Cohort & { role: 'student' | 'teacher' } = {
-  id: 'cohort_1',
-  name: 'AP Computer Science A',
-  section: 'Period 3',
-  join_code: 'APCSA-301',
-  joinCode: 'APCSA-301',
-  member_count: 28,
-  memberCount: 28,
-  assignment_count: 2,
-  instructorId: 'inst_hopper',
-  created_at: '2026-09-01T00:00:00Z',
-  role: 'teacher',
-};
-
-const DEFAULT_MEMBERS: CohortMember[] = [
-  { id: 'cm_1', cohort_id: 'cohort_1', user_id: 'u_1', username: 'AdaLovelace', role: 'student', xp: 1850, streak: 12, last_active: '15m ago' },
-  { id: 'cm_2', cohort_id: 'cohort_1', user_id: 'u_2', username: 'AlanTuring', role: 'student', xp: 1720, streak: 9, last_active: '1h ago' },
-  { id: 'cm_3', cohort_id: 'cohort_1', user_id: 'me', username: 'GraceHopper', role: 'student', xp: 1250, streak: 7, last_active: 'Active now' },
-];
-
-const DEFAULT_ASSIGNMENTS: Assignment[] = [
-  { id: 'as_1', cohort_id: 'cohort_1', title: 'Cyber Core Syntax', description: 'Master foundational syntax and variable scoping', due_at: new Date(Date.now() + 86400000).toISOString(), challenge_ids: ['quest-1'], solved_count: 24, total_count: 28, is_completed: true },
-  { id: 'as_2', cohort_id: 'cohort_1', title: 'Algorithm Loopers', description: 'Solve matrix iterations and edge condition assertions', due_at: new Date(Date.now() + 86400000 * 3).toISOString(), challenge_ids: ['quest-2'], solved_count: 18, total_count: 28, is_completed: false },
-];
-
-const DEFAULT_GRADEBOOK: { assignments: Assignment[]; rows: GradebookRow[] } = {
-  assignments: DEFAULT_ASSIGNMENTS,
-  rows: [
-    { user_id: 'u_1', username: 'AdaLovelace', total_xp: 1850, streak: 12, assignments: { as_1: { status: 'passed', score: 100 }, as_2: { status: 'passed', score: 95 } }, progress: 100 },
-    { user_id: 'u_2', username: 'AlanTuring', total_xp: 1720, streak: 9, assignments: { as_1: { status: 'passed', score: 100 }, as_2: { status: 'passed', score: 90 } }, progress: 95 },
-    { user_id: 'me', username: 'GraceHopper', total_xp: 1250, streak: 7, assignments: { as_1: { status: 'passed', score: 100 }, as_2: { status: 'submitted', score: 85 } }, progress: 90 },
-  ],
-};
-
-const DEFAULT_HINT_ACTIVITY: CohortHintActivity = {
-  total_hints: 14,
-  active_students: 8,
-  hints_by_level: { 1: 8, 2: 4, 3: 2 },
-  stuck_students: [
-    { student_name: 'GraceHopper', quest_id: 'quest-2', hints_used: 2 },
-    { student_name: 'AlanTuring', quest_id: 'quest-3', hints_used: 1 },
-  ],
-};
+const STORAGE_COHORTS = 'sovereign_cohorts_v2';
+const STORAGE_COHORT_MEMBERS = 'sovereign_cohort_members_v2';
+const STORAGE_ASSIGNMENTS = 'sovereign_assignments_v2';
 
 export class ClassroomService {
   static initDefaults(): void {
-    // initialize storage defaults if needed
+    // Zero preseeded dummy data
+  }
+
+  static getStoredCohorts(): Array<Cohort & { role: 'student' | 'teacher' }> {
+    if (typeof window === 'undefined') return [];
+    try {
+      const data = localStorage.getItem(STORAGE_COHORTS);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c) => c.id !== 'cohort_1' && c.name !== 'AP Computer Science A');
+        }
+      }
+    } catch {}
+    return [];
+  }
+
+  static saveStoredCohorts(list: Array<Cohort & { role: 'student' | 'teacher' }>): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(STORAGE_COHORTS, JSON.stringify(list));
+    } catch {}
   }
 
   static getUserCohorts(userId?: string): Array<Cohort & { role: 'student' | 'teacher' }> {
-    return [DEFAULT_COHORT];
+    const list = this.getStoredCohorts();
+    if (!userId) return list;
+    return list.filter((c) => c.instructorId === userId || c.role === 'teacher' || c.role === 'student');
   }
 
   static getCohortMembers(cohortId?: string, userId?: string): CohortMember[] {
-    return DEFAULT_MEMBERS;
+    if (typeof window === 'undefined' || !cohortId) return [];
+    try {
+      const data = localStorage.getItem(`${STORAGE_COHORT_MEMBERS}_${cohortId}`);
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch {}
+    return [];
   }
 
   static getMembers(): CohortMember[] {
-    return DEFAULT_MEMBERS;
+    return [];
   }
 
   static getCohortAssignments(cohortId?: string, userId?: string): Assignment[] {
-    return DEFAULT_ASSIGNMENTS;
+    if (typeof window === 'undefined' || !cohortId) return [];
+    try {
+      const data = localStorage.getItem(`${STORAGE_ASSIGNMENTS}_${cohortId}`);
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch {}
+    return [];
   }
 
   static getGradebook(cohortId?: string, userId?: string): { assignments: Assignment[]; rows: GradebookRow[] } {
-    return DEFAULT_GRADEBOOK;
+    const assignments = this.getCohortAssignments(cohortId, userId);
+    const members = this.getCohortMembers(cohortId, userId);
+    const rows: GradebookRow[] = members.map((m) => ({
+      user_id: m.user_id,
+      username: m.username,
+      total_xp: m.xp,
+      streak: m.streak,
+      assignments: {},
+      progress: 0,
+    }));
+    return { assignments, rows };
   }
 
   static getCohortHintActivity(cohortId?: string, userId?: string): CohortHintActivity {
-    return DEFAULT_HINT_ACTIVITY;
+    return {
+      total_hints: 0,
+      active_students: 0,
+      hints_by_level: { 1: 0, 2: 0, 3: 0 },
+      stuck_students: [],
+    };
   }
 
   static createCohort(userId: string, name: string): Cohort & { role: 'teacher' } {
-    return {
+    const newCohort: Cohort & { role: 'teacher' } = {
       id: `cohort_${Date.now()}`,
       name,
       join_code: `CODE-${Math.floor(100 + Math.random() * 900)}`,
       member_count: 1,
       assignment_count: 0,
+      instructorId: userId,
+      created_at: new Date().toISOString(),
       role: 'teacher',
     };
+
+    const current = this.getStoredCohorts();
+    current.push(newCohort);
+    this.saveStoredCohorts(current);
+
+    // Save initial instructor member
+    if (typeof window !== 'undefined') {
+      const instructorMember: CohortMember = {
+        id: `cm_${Date.now()}`,
+        cohort_id: newCohort.id,
+        user_id: userId,
+        username: 'Instructor',
+        role: 'teacher',
+        xp: 0,
+        streak: 1,
+        last_active: 'Just now',
+      };
+      localStorage.setItem(`${STORAGE_COHORT_MEMBERS}_${newCohort.id}`, JSON.stringify([instructorMember]));
+    }
+
+    return newCohort;
   }
 
   static joinCohort(userId: string, code: string): { success: boolean; message?: string; cohort?: Cohort & { role: 'student' } } {
+    const clean = code.trim().toUpperCase();
+    const cohorts = this.getStoredCohorts();
+    const target = cohorts.find((c) => c.join_code?.toUpperCase() === clean || c.joinCode?.toUpperCase() === clean);
+
+    if (!target) {
+      return {
+        success: false,
+        message: 'Invalid cohort code. No active classroom found with this code.',
+      };
+    }
+
+    const currentMembers = this.getCohortMembers(target.id);
+    const existing = currentMembers.find((m) => m.user_id === userId);
+    if (!existing) {
+      currentMembers.push({
+        id: `cm_${Date.now()}`,
+        cohort_id: target.id,
+        user_id: userId,
+        username: 'Cadet',
+        role: 'student',
+        xp: 0,
+        streak: 1,
+        last_active: 'Just now',
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${STORAGE_COHORT_MEMBERS}_${target.id}`, JSON.stringify(currentMembers));
+      }
+      target.member_count = currentMembers.length;
+      this.saveStoredCohorts(cohorts);
+    }
+
     return {
       success: true,
-      cohort: { ...DEFAULT_COHORT, role: 'student' },
+      cohort: { ...target, role: 'student' },
     };
   }
 
@@ -153,7 +219,7 @@ export class ClassroomService {
     challenge_ids: string[],
     due_at: string
   ): Assignment {
-    return {
+    const newAs: Assignment = {
       id: `as_${Date.now()}`,
       cohort_id: cohortId,
       title,
@@ -161,16 +227,32 @@ export class ClassroomService {
       challenge_ids,
       due_at,
       solved_count: 0,
-      total_count: 28,
+      total_count: 0,
       is_completed: false,
     };
+    const current = this.getCohortAssignments(cohortId, userId);
+    current.push(newAs);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${STORAGE_ASSIGNMENTS}_${cohortId}`, JSON.stringify(current));
+    }
+    return newAs;
   }
 
   static removeMember(cohortId: string, userId: string, targetUserId: string): boolean {
+    const members = this.getCohortMembers(cohortId, userId);
+    const filtered = members.filter((m) => m.user_id !== targetUserId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${STORAGE_COHORT_MEMBERS}_${cohortId}`, JSON.stringify(filtered));
+    }
     return true;
   }
 
   static exportGradebookCSV(cohortId: string, userId: string): string {
-    return `Student,Total XP,Streak,Progress\nAdaLovelace,1850,12,100%\nAlanTuring,1720,9,95%\nGraceHopper,1250,7,90%\n`;
+    const members = this.getCohortMembers(cohortId, userId);
+    let csv = `Student,Total XP,Streak,Role\n`;
+    members.forEach((m) => {
+      csv += `${m.username},${m.xp},${m.streak},${m.role}\n`;
+    });
+    return csv;
   }
 }

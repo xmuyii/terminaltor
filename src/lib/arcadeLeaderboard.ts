@@ -55,145 +55,90 @@ export const PLAYSTYLE_TITLES: PlaystyleTitleInfo[] = [
   { id: 'architect', title: '👑 Architect', description: 'Builds and upgrades the Cyber Base Citadel to Level 3+', styleType: 'defense' },
 ];
 
-const STORAGE_KEY_FORGE = 'sovereign_lb_wordforge_v1';
-const STORAGE_KEY_DEBUGS = 'sovereign_lb_debugs_v1';
-const STORAGE_KEY_STYLE = 'sovereign_player_style_title_v1';
-const STORAGE_KEY_UNLOCKED_STYLES = 'sovereign_unlocked_styles_v1';
+const STORAGE_KEY_FORGE = 'sovereign_lb_wordforge_v2';
+const STORAGE_KEY_DEBUGS = 'sovereign_lb_debugs_v2';
+const STORAGE_KEY_STYLE = 'sovereign_player_style_title_v2';
+const STORAGE_KEY_UNLOCKED_STYLES = 'sovereign_unlocked_styles_v2';
 
-const INITIAL_FORGE_BOARD: WordForgeRecord[] = [
-  { id: 'wf_1', username: 'AdaLovelace', score: 384, wordsForged: 24, longestWord: 'RECURSION', allianceName: 'Lagos Tech High', styleTitle: '🔥 Anagrammer', playedAt: '10m ago' },
-  { id: 'wf_2', username: 'AlanTuring', score: 310, wordsForged: 19, longestWord: 'ALGORITHM', allianceName: 'Sovereign Core', styleTitle: '⚡ Sprinter', playedAt: '35m ago' },
-  { id: 'wf_3', username: 'ClaudeShannon', score: 260, wordsForged: 16, longestWord: 'ENTROPY', allianceName: 'Solo Developer', styleTitle: '💎 Titan', playedAt: '1h ago' },
-  { id: 'wf_4', username: 'GuidoVanRossum', score: 215, wordsForged: 14, longestWord: 'GENERATOR', allianceName: 'Solo Developer', styleTitle: '🚀 Synthesizer', playedAt: '2h ago' },
-  { id: 'wf_5', username: 'GraceHopper', score: 180, wordsForged: 11, longestWord: 'COMPILER', allianceName: 'Navy Tech Alliance', styleTitle: '🌪️ Permutator', playedAt: '3h ago' },
-  { id: 'wf_6', username: 'LinusTorvalds', score: 155, wordsForged: 10, longestWord: 'KERNEL', allianceName: 'Freelancer', styleTitle: '💀 Glitcher', playedAt: '5h ago' },
-];
+// Purge any legacy dummy records from localStorage
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('sovereign_lb_wordforge_v1');
+    localStorage.removeItem('sovereign_lb_debugs_v1');
+  } catch {}
+}
 
-const INITIAL_DEBUGS_BOARD: DebugsHuntingRecord[] = [
-  { id: 'dh_1', username: 'GraceHopper', score: 420, correctAnswers: 9, fastestAnswerMs: 820, bugsFixed: 9, speedRecordSeconds: 0.82, accuracyRate: 98, allianceName: 'Navy Tech Alliance', styleTitle: '🎯 Sniper', playedAt: '15m ago' },
-  { id: 'dh_2', username: 'MargaretHamilton', score: 375, correctAnswers: 8, fastestAnswerMs: 1100, bugsFixed: 8, speedRecordSeconds: 1.1, accuracyRate: 95, allianceName: 'Apollo Academy', styleTitle: '⚔️ Exterminator', playedAt: '42m ago' },
-  { id: 'dh_3', username: 'DonaldKnuth', score: 290, correctAnswers: 6, fastestAnswerMs: 1450, bugsFixed: 6, speedRecordSeconds: 1.45, accuracyRate: 92, allianceName: 'Solo Developer', styleTitle: '⚡ Sprinter', playedAt: '1h ago' },
-  { id: 'dh_4', username: 'AlanTuring', score: 240, correctAnswers: 5, fastestAnswerMs: 1620, bugsFixed: 5, speedRecordSeconds: 1.62, accuracyRate: 90, allianceName: 'Sovereign Core', styleTitle: '💎 Titan', playedAt: '2h ago' },
-  { id: 'dh_5', username: 'DennisRitchie', score: 190, correctAnswers: 4, fastestAnswerMs: 1800, bugsFixed: 4, speedRecordSeconds: 1.8, accuracyRate: 88, allianceName: 'Bell Labs Cohort', styleTitle: '💀 Glitcher', playedAt: '4h ago' },
-  { id: 'dh_6', username: 'BarbaraLiskov', score: 140, correctAnswers: 3, fastestAnswerMs: 2100, bugsFixed: 3, speedRecordSeconds: 2.1, accuracyRate: 85, allianceName: 'Solo Developer', styleTitle: '🛡️ Sentinel', playedAt: '6h ago' },
-];
+const DUMMY_NAMES = new Set([
+  'AdaLovelace',
+  'AlanTuring',
+  'ClaudeShannon',
+  'GuidoVanRossum',
+  'GraceHopper',
+  'LinusTorvalds',
+  'MargaretHamilton',
+  'DonaldKnuth',
+  'DennisRitchie',
+  'BarbaraLiskov',
+  'KenThompson',
+  'QuantumCadet',
+  'student_demo',
+]);
 
 export const FORGE_BOARDS: Record<'today' | 'weekly' | 'all_time', WordForgeRecord[]> = {
-  today: INITIAL_FORGE_BOARD,
-  weekly: [
-    { id: 'wfw_1', username: 'AdaLovelace', score: 3840, wordsForged: 240, longestWord: 'RECURSION', allianceName: 'Lagos Tech High', styleTitle: '🔥 Anagrammer', playedAt: 'Today' },
-    { id: 'wfw_2', username: 'AlanTuring', score: 3120, wordsForged: 210, longestWord: 'COMPILER', allianceName: 'Sovereign Core', styleTitle: '⚡ Sprinter', playedAt: 'Yesterday' },
-    { id: 'wfw_3', username: 'ClaudeShannon', score: 2890, wordsForged: 180, longestWord: 'ENTROPY', allianceName: 'Solo Developer', styleTitle: '💎 Titan', playedAt: '2d ago' },
-    { id: 'wfw_4', username: 'GuidoVanRossum', score: 2650, wordsForged: 165, longestWord: 'GENERATOR', allianceName: 'Solo Developer', styleTitle: '🚀 Synthesizer', playedAt: '3d ago' },
-    { id: 'wfw_5', username: 'GraceHopper', score: 2420, wordsForged: 150, longestWord: 'INTERPRETER', allianceName: 'Navy Tech Alliance', styleTitle: '🌪️ Permutator', playedAt: '4d ago' },
-    { id: 'wfw_6', username: 'LinusTorvalds', score: 2180, wordsForged: 135, longestWord: 'MONOLITHIC', allianceName: 'Freelancer', styleTitle: '💀 Glitcher', playedAt: '5d ago' },
-  ],
-  all_time: [
-    { id: 'wfa_1', username: 'AdaLovelace', score: 28400, wordsForged: 1950, longestWord: 'RECURSION', allianceName: 'Lagos Tech High', styleTitle: '🔥 Anagrammer', playedAt: 'Oct 2026' },
-    { id: 'wfa_2', username: 'AlanTuring', score: 24100, wordsForged: 1680, longestWord: 'TURINGMACHINE', allianceName: 'Sovereign Core', styleTitle: '⚡ Sprinter', playedAt: 'Oct 2026' },
-    { id: 'wfa_3', username: 'ClaudeShannon', score: 21200, wordsForged: 1420, longestWord: 'SUPERPOSITION', allianceName: 'Solo Developer', styleTitle: '💎 Titan', playedAt: 'Sep 2026' },
-    { id: 'wfa_4', username: 'GuidoVanRossum', score: 18900, wordsForged: 1290, longestWord: 'METACLASS', allianceName: 'Solo Developer', styleTitle: '🚀 Synthesizer', playedAt: 'Sep 2026' },
-    { id: 'wfa_5', username: 'GraceHopper', score: 16700, wordsForged: 1150, longestWord: 'STANDARDIZED', allianceName: 'Navy Tech Alliance', styleTitle: '🌪️ Permutator', playedAt: 'Aug 2026' },
-    { id: 'wfa_6', username: 'LinusTorvalds', score: 14500, wordsForged: 980, longestWord: 'FILESYSTEM', allianceName: 'Freelancer', styleTitle: '💀 Glitcher', playedAt: 'Aug 2026' },
-  ],
+  today: [],
+  weekly: [],
+  all_time: [],
 };
 
 export const DEBUGS_BOARDS: Record<'today' | 'weekly' | 'all_time', DebugsHuntingRecord[]> = {
-  today: INITIAL_DEBUGS_BOARD,
-  weekly: [
-    { id: 'dhw_1', username: 'GraceHopper', score: 4200, correctAnswers: 42, fastestAnswerMs: 820, bugsFixed: 42, speedRecordSeconds: 0.82, accuracyRate: 98, allianceName: 'Navy Tech Alliance', styleTitle: '🎯 Sniper', playedAt: 'Today' },
-    { id: 'dhw_2', username: 'MargaretHamilton', score: 3750, correctAnswers: 38, fastestAnswerMs: 1100, bugsFixed: 38, speedRecordSeconds: 1.1, accuracyRate: 95, allianceName: 'Apollo Academy', styleTitle: '⚔️ Exterminator', playedAt: 'Yesterday' },
-    { id: 'dhw_3', username: 'DonaldKnuth', score: 2900, correctAnswers: 29, fastestAnswerMs: 1450, bugsFixed: 29, speedRecordSeconds: 1.45, accuracyRate: 92, allianceName: 'Solo Developer', styleTitle: '⚡ Sprinter', playedAt: '2d ago' },
-    { id: 'dhw_4', username: 'DennisRitchie', score: 2450, correctAnswers: 24, fastestAnswerMs: 1720, bugsFixed: 24, speedRecordSeconds: 1.72, accuracyRate: 91, allianceName: 'Bell Labs Cohort', styleTitle: '💀 Glitcher', playedAt: '3d ago' },
-    { id: 'dhw_5', username: 'AlanTuring', score: 2100, correctAnswers: 21, fastestAnswerMs: 1620, bugsFixed: 21, speedRecordSeconds: 1.62, accuracyRate: 89, allianceName: 'Sovereign Core', styleTitle: '💎 Titan', playedAt: '4d ago' },
-    { id: 'dhw_6', username: 'BarbaraLiskov', score: 1850, correctAnswers: 18, fastestAnswerMs: 1980, bugsFixed: 18, speedRecordSeconds: 1.98, accuracyRate: 88, allianceName: 'Solo Developer', styleTitle: '🛡️ Sentinel', playedAt: '5d ago' },
-  ],
-  all_time: [
-    { id: 'dha_1', username: 'GraceHopper', score: 24100, correctAnswers: 240, fastestAnswerMs: 650, bugsFixed: 240, speedRecordSeconds: 0.65, accuracyRate: 99, allianceName: 'Navy Tech Alliance', styleTitle: '🎯 Sniper', playedAt: 'Oct 2026' },
-    { id: 'dha_2', username: 'MargaretHamilton', score: 21500, correctAnswers: 212, fastestAnswerMs: 820, bugsFixed: 212, speedRecordSeconds: 0.82, accuracyRate: 97, allianceName: 'Apollo Academy', styleTitle: '⚔️ Exterminator', playedAt: 'Oct 2026' },
-    { id: 'dha_3', username: 'DennisRitchie', score: 17800, correctAnswers: 175, fastestAnswerMs: 1150, bugsFixed: 175, speedRecordSeconds: 1.15, accuracyRate: 94, allianceName: 'Bell Labs Cohort', styleTitle: '💀 Glitcher', playedAt: 'Sep 2026' },
-    { id: 'dha_4', username: 'AlanTuring', score: 15400, correctAnswers: 150, fastestAnswerMs: 1220, bugsFixed: 150, speedRecordSeconds: 1.22, accuracyRate: 92, allianceName: 'Sovereign Core', styleTitle: '💎 Titan', playedAt: 'Sep 2026' },
-    { id: 'dha_5', username: 'DonaldKnuth', score: 12650, correctAnswers: 122, fastestAnswerMs: 1350, bugsFixed: 122, speedRecordSeconds: 1.35, accuracyRate: 93, allianceName: 'Solo Developer', styleTitle: '⚡ Sprinter', playedAt: 'Aug 2026' },
-    { id: 'dha_6', username: 'BarbaraLiskov', score: 10200, correctAnswers: 98, fastestAnswerMs: 1480, bugsFixed: 98, speedRecordSeconds: 1.48, accuracyRate: 90, allianceName: 'Solo Developer', styleTitle: '🛡️ Sentinel', playedAt: 'Aug 2026' },
-  ],
+  today: [],
+  weekly: [],
+  all_time: [],
 };
 
-// Playstyle titles awarded for behavior (emoji + 1 word)
 export const LAST_WEEK_CHAMPIONS: Record<'codeforgers' | 'debugshunting', LastWeekChampion[]> = {
-  codeforgers: [
-    { rank: 1, username: 'AdaLovelace', score: 3840, allianceName: 'Lagos Tech High', gameMode: 'Code Forgers', badge: '🥇 1st Place', title: '🔥 Anagrammer' },
-    { rank: 2, username: 'AlanTuring', score: 3120, allianceName: 'Sovereign Core', gameMode: 'Code Forgers', badge: '🥈 2nd Place', title: '⚡ Sprinter' },
-    { rank: 3, username: 'ClaudeShannon', score: 2890, allianceName: 'Solo Developer', gameMode: 'Code Forgers', badge: '🥉 3rd Place', title: '💎 Titan' },
-    { rank: 4, username: 'GuidoVanRossum', score: 2650, allianceName: 'Solo Developer', gameMode: 'Code Forgers', badge: '⭐ 4th Place', title: '🚀 Synthesizer' },
-    { rank: 5, username: 'GraceHopper', score: 2420, allianceName: 'Navy Tech Alliance', gameMode: 'Code Forgers', badge: '⭐ 5th Place', title: '🌪️ Permutator' },
-    { rank: 6, username: 'LinusTorvalds', score: 2180, allianceName: 'Freelancer', gameMode: 'Code Forgers', badge: '⭐ 6th Place', title: '💀 Glitcher' },
-    { rank: 7, username: 'MargaretHamilton', score: 1950, allianceName: 'Apollo Academy', gameMode: 'Code Forgers', badge: '⭐ 7th Place', title: '🎯 Sniper' },
-    { rank: 8, username: 'DennisRitchie', score: 1780, allianceName: 'Bell Labs Cohort', gameMode: 'Code Forgers', badge: '⭐ 8th Place', title: '⚔️ Exterminator' },
-    { rank: 9, username: 'KenThompson', score: 1620, allianceName: 'Solo Developer', gameMode: 'Code Forgers', badge: '⭐ 9th Place', title: '👑 Architect' },
-    { rank: 10, username: 'BarbaraLiskov', score: 1450, allianceName: 'Solo Developer', gameMode: 'Code Forgers', badge: '⭐ 10th Place', title: '🛡️ Sentinel' },
-  ],
-  debugshunting: [
-    { rank: 1, username: 'GraceHopper', score: 4200, allianceName: 'Navy Tech Alliance', gameMode: 'Debugs Hunting', badge: '🥇 1st Place', title: '🎯 Sniper' },
-    { rank: 2, username: 'MargaretHamilton', score: 3750, allianceName: 'Apollo Academy', gameMode: 'Debugs Hunting', badge: '🥈 2nd Place', title: '⚔️ Exterminator' },
-    { rank: 3, username: 'DennisRitchie', score: 2950, allianceName: 'Solo Developer', gameMode: 'Debugs Hunting', badge: '🥉 3rd Place', title: '💀 Glitcher' },
-    { rank: 4, username: 'AlanTuring', score: 2710, allianceName: 'Sovereign Core', gameMode: 'Debugs Hunting', badge: '⭐ 4th Place', title: '⚡ Sprinter' },
-    { rank: 5, username: 'AdaLovelace', score: 2540, allianceName: 'Lagos Tech High', gameMode: 'Debugs Hunting', badge: '⭐ 5th Place', title: '🔥 Anagrammer' },
-    { rank: 6, username: 'DonaldKnuth', score: 2380, allianceName: 'Solo Developer', gameMode: 'Debugs Hunting', badge: '⭐ 6th Place', title: '💎 Titan' },
-    { rank: 7, username: 'GuidoVanRossum', score: 2190, allianceName: 'Solo Developer', gameMode: 'Debugs Hunting', badge: '⭐ 7th Place', title: '🚀 Synthesizer' },
-    { rank: 8, username: 'BarbaraLiskov', score: 1980, allianceName: 'Solo Developer', gameMode: 'Debugs Hunting', badge: '⭐ 8th Place', title: '🛡️ Sentinel' },
-    { rank: 9, username: 'KenThompson', score: 1820, allianceName: 'Bell Labs Cohort', gameMode: 'Debugs Hunting', badge: '⭐ 9th Place', title: '👑 Architect' },
-    { rank: 10, username: 'LinusTorvalds', score: 1650, allianceName: 'Freelancer', gameMode: 'Debugs Hunting', badge: '⭐ 10th Place', title: '🌪️ Permutator' },
-  ],
+  codeforgers: [],
+  debugshunting: [],
 };
 
 class ArcadeLeaderboardImpl {
   getWordForgeLeaderboard(timeframe: 'today' | 'weekly' | 'all_time' = 'today'): WordForgeRecord[] {
-    if (timeframe !== 'today') {
-      return (FORGE_BOARDS[timeframe] || INITIAL_FORGE_BOARD)
-        .filter((r) => r.username !== 'QuantumCadet' && r.username !== 'student_demo')
-        .map((r, i) => ({ ...r, rank: i + 1 }));
-    }
-    if (typeof window === 'undefined') return INITIAL_FORGE_BOARD;
+    if (typeof window === 'undefined') return [];
     try {
       const data = localStorage.getItem(STORAGE_KEY_FORGE);
       if (data) {
         const parsed: WordForgeRecord[] = JSON.parse(data);
         return parsed
-          .filter((r) => r.username !== 'QuantumCadet' && r.username !== 'student_demo')
+          .filter((r) => !DUMMY_NAMES.has(r.username) && r.allianceName !== 'Lagos Tech High')
           .sort((a, b) => b.score - a.score)
           .map((r, i) => ({ ...r, rank: i + 1 }));
       }
     } catch (e) {
       console.warn('Failed to read forge board:', e);
     }
-    return INITIAL_FORGE_BOARD.map((r, i) => ({ ...r, rank: i + 1 }));
+    return [];
   }
 
   getDebugsHuntingLeaderboard(timeframe: 'today' | 'weekly' | 'all_time' = 'today'): DebugsHuntingRecord[] {
-    if (timeframe !== 'today') {
-      return (DEBUGS_BOARDS[timeframe] || INITIAL_DEBUGS_BOARD)
-        .filter((r) => r.username !== 'QuantumCadet' && r.username !== 'student_demo')
-        .map((r, i) => ({ ...r, rank: i + 1 }));
-    }
-    if (typeof window === 'undefined') return INITIAL_DEBUGS_BOARD;
+    if (typeof window === 'undefined') return [];
     try {
       const data = localStorage.getItem(STORAGE_KEY_DEBUGS);
       if (data) {
         const parsed: DebugsHuntingRecord[] = JSON.parse(data);
         return parsed
-          .filter((r) => r.username !== 'QuantumCadet' && r.username !== 'student_demo')
+          .filter((r) => !DUMMY_NAMES.has(r.username) && r.allianceName !== 'Lagos Tech High')
           .sort((a, b) => b.score - a.score)
           .map((r, i) => ({ ...r, rank: i + 1 }));
       }
     } catch (e) {
       console.warn('Failed to read debugs board:', e);
     }
-    return INITIAL_DEBUGS_BOARD.map((r, i) => ({ ...r, rank: i + 1 }));
+    return [];
   }
 
   getLastWeekWinners(mode: 'codeforgers' | 'debugshunting' | 'wordforge'): LastWeekChampion[] {
     const key = mode === 'debugshunting' ? 'debugshunting' : 'codeforgers';
-    return LAST_WEEK_CHAMPIONS[key];
+    return LAST_WEEK_CHAMPIONS[key] || [];
   }
 
   recordWordForgeScore(
@@ -251,7 +196,7 @@ class ArcadeLeaderboardImpl {
           fastestAnswerMs: Math.round((speedRecordSeconds || 1.5) * 1000),
           bugsFixed: bugsFixed || 0,
           speedRecordSeconds: speedRecordSeconds || 1.5,
-          accuracyRate: 95,
+          accuracyRate: 100,
           allianceName: allianceName || 'Solo Developer',
         };
       } else {
@@ -281,10 +226,9 @@ class ArcadeLeaderboardImpl {
     this.recordDebugsHuntingScore(record);
   }
 
-  // Playstyle system: Players unlock emoji + 1 word styles based on behavior!
   getPlayerEquippedStyle(): string {
-    if (typeof window === 'undefined') return '🔥 Anagrammer';
-    return localStorage.getItem(STORAGE_KEY_STYLE) || '🔥 Anagrammer';
+    if (typeof window === 'undefined') return '⚡ Sprinter';
+    return localStorage.getItem(STORAGE_KEY_STYLE) || '⚡ Sprinter';
   }
 
   setPlayerEquippedStyle(title: string): void {
@@ -293,71 +237,58 @@ class ArcadeLeaderboardImpl {
   }
 
   getUnlockedStyles(): string[] {
-    if (typeof window === 'undefined') return ['🔥 Anagrammer'];
+    if (typeof window === 'undefined') return ['sprinter'];
     try {
-      const stored = localStorage.getItem(STORAGE_KEY_UNLOCKED_STYLES);
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      // fallback
-    }
-    return ['🔥 Anagrammer'];
+      const data = localStorage.getItem(STORAGE_KEY_UNLOCKED_STYLES);
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch {}
+    return ['sprinter'];
   }
 
-  unlockStyle(title: string): boolean {
-    if (typeof window === 'undefined') return false;
+  unlockStyle(styleId: string): void {
+    if (typeof window === 'undefined') return;
     const current = this.getUnlockedStyles();
-    if (!current.includes(title)) {
-      const updated = [...current, title];
-      localStorage.setItem(STORAGE_KEY_UNLOCKED_STYLES, JSON.stringify(updated));
-      return true; // Newly unlocked!
+    if (!current.includes(styleId)) {
+      current.push(styleId);
+      localStorage.setItem(STORAGE_KEY_UNLOCKED_STYLES, JSON.stringify(current));
     }
-    return false;
   }
 
-  // Sadistic Game Master Chaos: Shuffles or swaps leaderboard ranks!
-  triggerGameMasterChaos(mode: 'codeforgers' | 'debugshunting'): { eventType: string; description: string } {
-    if (mode === 'codeforgers') {
-      const board = [...this.getWordForgeLeaderboard('today')];
-      if (board.length >= 2) {
-        // Swap rank #1 with a lower rank or shuffle top 10
-        const isSwap = Math.random() > 0.5;
-        if (isSwap && board.length >= 4) {
-          const targetIdx = Math.min(board.length - 1, 3);
-          const tempScore = board[0].score;
-          board[0].score = board[targetIdx].score;
-          board[targetIdx].score = tempScore;
-          localStorage.setItem(STORAGE_KEY_FORGE, JSON.stringify(board));
-          return {
-            eventType: 'Rank Swap Mutation',
-            description: `😈 The Sadistic Game Master swapped #${1} (${board[0].username}) and #${targetIdx + 1} (${board[targetIdx].username}) points!`,
-          };
-        } else {
-          // Shuffle top ranks
-          const topSlice = board.slice(0, Math.min(6, board.length)).sort(() => Math.random() - 0.5);
-          const newBoard = [...topSlice, ...board.slice(topSlice.length)];
-          localStorage.setItem(STORAGE_KEY_FORGE, JSON.stringify(newBoard));
-          return {
-            eventType: 'Leaderboard Scramble',
-            description: `😈 The Sadistic Game Master scrambled the daily podium positions!`,
-          };
-        }
-      }
+  evaluateAndAwardStyle(stats: {
+    gameMode: 'wordforge' | 'debugshunting';
+    score: number;
+    wordsForged?: number;
+    longestWord?: string;
+    bugsFixed?: number;
+    accuracyRate?: number;
+    speedRecordSeconds?: number;
+    citadelLevel?: number;
+    isAnagram?: boolean;
+  }): string | null {
+    let unlockedId: string | null = null;
+
+    if (stats.gameMode === 'wordforge') {
+      if (stats.isAnagram) unlockedId = 'anagrammer';
+      else if ((stats.wordsForged || 0) >= 15) unlockedId = 'synthesizer';
+      else if ((stats.longestWord?.length || 0) >= 7) unlockedId = 'titan';
+      else if ((stats.longestWord?.length || 0) >= 6) unlockedId = 'permutator';
+      else if ((stats.speedRecordSeconds || 99) <= 3) unlockedId = 'sprinter';
     } else {
-      const board = [...this.getDebugsHuntingLeaderboard('today')];
-      if (board.length >= 2) {
-        const topSlice = board.slice(0, Math.min(6, board.length)).sort(() => Math.random() - 0.5);
-        const newBoard = [...topSlice, ...board.slice(topSlice.length)];
-        localStorage.setItem(STORAGE_KEY_DEBUGS, JSON.stringify(newBoard));
-        return {
-          eventType: 'Bug Hunter Chaos',
-          description: `😈 The Sadistic Game Master scrambled the daily debug rankings!`,
-        };
-      }
+      if ((stats.accuracyRate || 0) >= 95) unlockedId = 'sniper';
+      else if ((stats.bugsFixed || 0) >= 6) unlockedId = 'exterminator';
+      else if ((stats.speedRecordSeconds || 99) <= 1.0) unlockedId = 'glitcher';
+      else if ((stats.citadelLevel || 0) >= 3) unlockedId = 'architect';
     }
-    return {
-      eventType: 'Chaos Pulse',
-      description: `😈 The Sadistic Game Master inspected the board and laughed sinisterly!`,
-    };
+
+    if (unlockedId) {
+      this.unlockStyle(unlockedId);
+      const found = PLAYSTYLE_TITLES.find((t) => t.id === unlockedId);
+      return found ? found.title : null;
+    }
+
+    return null;
   }
 }
 

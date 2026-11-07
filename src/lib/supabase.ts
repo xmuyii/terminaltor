@@ -256,7 +256,7 @@ class SupabaseStoreImpl {
             localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(parsed));
           } catch {}
         }
-        if (parsed.academy_id === 'acad_lagos_high') {
+        if (parsed.academy_id === 'acad_lagos_high' || parsed.academy_name === 'Lagos Tech High Alliance') {
           delete parsed.academy_id;
           parsed.academy_name = 'Solo Developer';
           try {

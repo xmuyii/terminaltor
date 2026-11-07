@@ -471,7 +471,7 @@ export const ArcadePage: React.FC<ArcadePageProps> = ({ currentProfile, onBackTo
             </div>
           </div>
 
-          {/* Live Squad Chatter & Terminaltor Raid Status (from Ose Engine PWA) */}
+          {/* Orbital Satellite Intercept Array & Deep Sector Beacon Center */}
           <SquadChatter
             currentUsername={playerName}
             roomCode={selectedMode === 'debugshunting' ? `ARENA-DEBUG-${roomGenerationIndex}` : `ARENA-FORGE-${roomGenerationIndex}`}
@@ -731,19 +731,6 @@ export const ArcadePage: React.FC<ArcadePageProps> = ({ currentProfile, onBackTo
             {/* Tab 2: Debugs Hunting Leaderboard */}
             {activeBoardTab === 'debugshunting' && (
               <div className="space-y-4">
-                {/* Accuracy Calculation Explainer Callout */}
-                <div className="p-3 bg-amber-50/80 border border-amber-200/90 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
-                  <div className="p-1 rounded bg-amber-500/10 text-amber-700 mt-0.5 shrink-0">
-                    <Zap className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="font-bold text-amber-950">Accuracy Calculation in Debugs Hunting:</span>
-                    <p className="text-[11px] text-amber-800/90 leading-relaxed">
-                      <strong>Accuracy = (Bugs Solved ÷ Total Question Attempts) × 100%</strong>. Every answer costs 10 credits. Correct identifications award 100 base pts + time-remaining speed bonus + combo streak multiplier. Incorrect choices incur a -20 pt penalty, break your streak, and lower your accuracy percentage.
-                    </p>
-                  </div>
-                </div>
-
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>

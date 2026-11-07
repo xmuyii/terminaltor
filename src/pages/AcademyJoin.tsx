@@ -49,7 +49,7 @@ export const AcademyJoin: React.FC<AcademyJoinProps> = ({
     const clean = e.target.value.toUpperCase();
     setJoinCode(clean);
     setErrorMsg(null);
-    if (clean.length === 6) {
+    if (clean.length >= 3) {
       const found = await academyService.getAcademyByJoinCode(clean);
       setPreviewAcademy(found);
     } else {
@@ -60,7 +60,7 @@ export const AcademyJoin: React.FC<AcademyJoinProps> = ({
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinCode.trim()) {
-      setErrorMsg('Please enter a 6-character Alliance Join Code.');
+      setErrorMsg('Please enter an Alliance Join Code.');
       return;
     }
 
@@ -68,20 +68,20 @@ export const AcademyJoin: React.FC<AcademyJoinProps> = ({
     setErrorMsg(null);
 
     const res = await academyService.joinAcademy(
+      joinCode.trim(),
       currentProfile.id,
-      currentProfile.username,
-      joinCode
+      currentProfile.username
     );
 
     setIsSubmitting(false);
 
     if (res.success && res.academy) {
-      setSuccessMsg(`Welcome to ${res.academy.name}! Sovereign ${res.academy.subscription_plan.toUpperCase()} benefits unlocked.`);
+      setSuccessMsg(`Welcome to ${res.academy.name}! Sovereign ${res.academy.subscription_plan?.toUpperCase() || 'PRO'} benefits unlocked.`);
       setTimeout(() => {
         onSuccess();
       }, 1500);
     } else {
-      setErrorMsg(res.error || 'Failed to join academy.');
+      setErrorMsg(res.error || res.message || 'Failed to join academy.');
     }
   };
 

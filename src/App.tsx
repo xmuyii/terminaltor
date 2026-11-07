@@ -389,6 +389,8 @@ export default function App() {
             currentProfile={profile}
             onSelectQuest={handleSelectQuest}
             onNavigateToSignup={() => setCurrentView('academy-signup')}
+            onProfileUpdated={(updated) => setProfile(updated)}
+            onBackToApp={() => setCurrentView('sandbox')}
           />
         )}
 
@@ -413,6 +415,8 @@ export default function App() {
             currentProfile={profile}
             onBackToApp={() => setCurrentView('sandbox')}
             onNavigateToSignup={() => setCurrentView('academy-signup')}
+            onNavigateToJoin={() => setCurrentView('academy-join')}
+            onProfileUpdated={(updated) => setProfile(updated)}
           />
         )}
 
@@ -420,7 +424,7 @@ export default function App() {
           <AcademySignup
             currentProfile={profile}
             onSuccess={() => setCurrentView('academy-dashboard')}
-            onCancel={() => setCurrentView('academy-dashboard')}
+            onCancel={() => setCurrentView('sandbox')}
           />
         )}
 

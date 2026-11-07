@@ -19,22 +19,26 @@ import {
   Trophy,
   Flame,
   TrendingUp,
+  Lock,
+  KeyRound,
+  ArrowRight
 } from 'lucide-react';
 import {
   academyService,
   AcademyRecord,
   AcademyMemberRecord,
   MonthlyAcademyStanding,
-  DEFAULT_ACADEMY,
-  DEFAULT_MEMBERS,
 } from '../lib/academyService';
 import { Profile } from '../types';
+import { telegramAuth } from '../lib/telegramAuth';
 
 interface AcademyDashboardProps {
   currentProfile: Profile;
   academyId?: string;
   onBackToApp: () => void;
   onNavigateToSignup?: () => void;
+  onNavigateToJoin?: () => void;
+  onProfileUpdated?: (updated: Profile) => void;
 }
 
 export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
@@ -42,41 +46,68 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
   academyId,
   onBackToApp,
   onNavigateToSignup,
+  onNavigateToJoin,
+  onProfileUpdated,
 }) => {
-  const [academy, setAcademy] = useState<AcademyRecord | null>(() => DEFAULT_ACADEMY);
-  const [members, setMembers] = useState<AcademyMemberRecord[]>(() => DEFAULT_MEMBERS);
-  const [loading, setLoading] = useState(false);
+  const [academy, setAcademy] = useState<AcademyRecord | null>(null);
+  const [members, setMembers] = useState<AcademyMemberRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  // Instructor Passcode gate state
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [passcodeError, setPasscodeError] = useState<string | null>(null);
+
+  // Student join code state
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [joinStatusMsg, setJoinStatusMsg] = useState<{ success: boolean; text: string } | null>(null);
+
   // Monthly Academy Leaderboard tab state
   const [leagueTab, setLeagueTab] = useState<'current_month' | 'last_month'>('current_month');
-  const [currentMonthStandings, setCurrentMonthStandings] = useState<MonthlyAcademyStanding[]>(() =>
-    academyService.getCurrentMonthLeaderboard()
-  );
-  const [lastMonthStandings, setLastMonthStandings] = useState<MonthlyAcademyStanding[]>(() =>
-    academyService.getLastMonthLeaderboard()
-  );
+  const [currentMonthStandings, setCurrentMonthStandings] = useState<MonthlyAcademyStanding[]>([]);
+  const [lastMonthStandings, setLastMonthStandings] = useState<MonthlyAcademyStanding[]>([]);
+
+  const isInstructor =
+    currentProfile.role === 'instructor' || currentProfile.role === 'teacher' || currentProfile.role === 'admin';
 
   const loadData = async () => {
     try {
-      let target = academyId ? await academyService.getAcademyById(academyId) : null;
+      setLoading(true);
+      let target: AcademyRecord | null = null;
+
+      if (academyId) {
+        target = await academyService.getAcademyById(academyId);
+      }
+
       if (!target) {
-        const all = await academyService.getAcademies();
-        target = all.find((a) => a.owner_id === currentProfile.id) || all[0] || DEFAULT_ACADEMY;
+        // Look up my enrolled academy first
+        const myEnrolled = await academyService.getMyEnrolledAcademy(currentProfile.id);
+        if (myEnrolled) {
+          target = myEnrolled.academy;
+        } else {
+          // Look up if user owns any academy
+          const all = await academyService.getAcademies();
+          target = all.find((a) => a.owner_id === currentProfile.id) || null;
+        }
       }
 
       if (target) {
         setAcademy(target);
         const mems = await academyService.getAcademyMembers(target.id);
-        setMembers(mems.length > 0 ? mems : DEFAULT_MEMBERS);
+        setMembers(mems);
+      } else {
+        setAcademy(null);
+        setMembers([]);
       }
+
+      setCurrentMonthStandings(academyService.getCurrentMonthLeaderboard());
+      setLastMonthStandings(academyService.getLastMonthLeaderboard());
     } catch (err) {
       console.warn('Error loading academy dashboard:', err);
-      // Fallback safely to default academy
-      setAcademy(DEFAULT_ACADEMY);
-      setMembers(DEFAULT_MEMBERS);
+      setAcademy(null);
+      setMembers([]);
     } finally {
       setLoading(false);
     }
@@ -101,9 +132,39 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleVerifyPasscode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passcodeInput.trim()) return;
+    const res = telegramAuth.verifyInstructorPasscode(passcodeInput);
+    if (res.success) {
+      setPasscodeError(null);
+      const updated = { ...currentProfile, role: 'instructor' as const };
+      onProfileUpdated?.(updated);
+      loadData();
+    } else {
+      setPasscodeError(res.message || 'Incorrect passcode. Try INSTRUCTOR2026');
+    }
+  };
+
+  const handleJoinAcademy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!joinCodeInput.trim()) return;
+    setJoinStatusMsg(null);
+    const res = await academyService.joinAcademy(joinCodeInput, currentProfile.id, currentProfile.username);
+    if (res.success && res.academy) {
+      setJoinStatusMsg({ success: true, text: res.message });
+      setAcademy(res.academy);
+      await loadData();
+    } else {
+      setJoinStatusMsg({ success: false, text: res.message || 'Invalid academy code.' });
+    }
+  };
+
   const handleRemoveStudent = async (userId: string, username: string) => {
     if (!academy) return;
-    const confirm = window.confirm(`Remove ${username} from this Academy? This will vacate their student seat and revert them to their individual tier.`);
+    const confirm = window.confirm(
+      `Remove ${username} from this Academy? This will vacate their student seat and revert them to their individual tier.`
+    );
     if (!confirm) return;
 
     await academyService.removeMember(academy.id, userId);
@@ -112,18 +173,157 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
     await loadData();
   };
 
-  if (loading && !academy) {
+  if (loading) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-[#f4fbf7]">
         <div className="flex items-center gap-3 text-emerald-800 font-semibold text-sm">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          <span>Loading Academy Alliance Dashboard...</span>
+          <span>Verifying Academy Alliance Entitlements...</span>
         </div>
       </div>
     );
   }
 
-  const activeAcademy = academy || DEFAULT_ACADEMY;
+  // =========================================================================
+  // GATED ACCESS: Normal player without paid academy or instructor code
+  // =========================================================================
+  if (!academy && !isInstructor) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-[#070b14] text-slate-100 p-4 sm:p-8 flex flex-col items-center justify-center">
+        <div className="max-w-2xl w-full mx-auto space-y-6 text-center">
+          <button
+            type="button"
+            onClick={onBackToApp}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer self-start mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Home</span>
+          </button>
+
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-400 shadow-xl shadow-amber-500/10">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-wider">
+              <span>Restricted Institutional Access</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Academy Alliances Gated
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-xl mx-auto">
+              Academy Alliances provide multi-seat institutional licenses for schools, bootcamps, and coding clubs.
+              A normal player cannot enter this section without first paying for an Academy Alliance or having their school give them an invite or instructor code.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left pt-2">
+            {/* Action 1: Register and Pay */}
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-emerald-500/40 space-y-3 flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                  <Shield className="w-4 h-4" />
+                  <span>Option 1: School Alliance</span>
+                </div>
+                <h3 className="text-sm font-bold text-white">Register &amp; Pay for Academy</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Flat ⭐️ 675 Stars/month (≈ ₦25,000) for 30 enrolled students. Instant owner &amp; instructor status.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onNavigateToSignup}
+                className="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Register Academy (⭐️ 675/mo)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Action 2: Enter Student Code */}
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-sky-500/40 space-y-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-sky-400 uppercase tracking-wider">
+                  <GraduationCap className="w-4 h-4" />
+                  <span>Option 2: Student Join Code</span>
+                </div>
+                <h3 className="text-sm font-bold text-white">Join via School Invite</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Enter the 8-character invite code issued by your teacher or academy coordinator.
+                </p>
+              </div>
+
+              <form onSubmit={handleJoinAcademy} className="space-y-2">
+                <input
+                  type="text"
+                  value={joinCodeInput}
+                  onChange={(e) => setJoinCodeInput(e.target.value)}
+                  placeholder="e.g. ACAD-4921"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 font-mono uppercase tracking-wider text-center"
+                />
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md cursor-pointer"
+                >
+                  Join Academy Alliance
+                </button>
+                {joinStatusMsg && (
+                  <p
+                    className={`text-[11px] font-semibold text-center ${
+                      joinStatusMsg.success ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                  >
+                    {joinStatusMsg.text}
+                  </p>
+                )}
+              </form>
+            </div>
+          </div>
+
+          {/* Action 3: Instructor Passcode Unlock */}
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-left space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+              <KeyRound className="w-4 h-4 text-amber-400" />
+              <span>Are you an Academy Instructor or Staff Member?</span>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Enter your verified institution passcode to unlock administrative privileges.
+            </p>
+            <form onSubmit={handleVerifyPasscode} className="flex gap-2 pt-1">
+              <input
+                type="text"
+                value={passcodeInput}
+                onChange={(e) => setPasscodeInput(e.target.value)}
+                placeholder="Passcode (e.g. INSTRUCTOR2026)"
+                className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-mono uppercase"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer whitespace-nowrap"
+              >
+                Verify Code
+              </button>
+            </form>
+            {passcodeError && <p className="text-xs text-rose-400">{passcodeError}</p>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // ACTIVE ACADEMY DASHBOARD: Render genuine academy details
+  // =========================================================================
+  const activeAcademy = academy || {
+    id: `acad_owner_${currentProfile.id}`,
+    name: 'Registered Academy Alliance',
+    join_code: 'ACTIVE-ALLIANCE',
+    seat_cap: 30,
+    subscription_plan: 'pro',
+    owner_id: currentProfile.id,
+  };
+
   const seatsUsed = members.length;
   const seatCap = activeAcademy.seat_cap || activeAcademy.seats_total || 30;
   const seatsRemaining = Math.max(0, seatCap - seatsUsed);
@@ -140,233 +340,122 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
             <button
               type="button"
               onClick={onBackToApp}
-              className="p-2 rounded-xl bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 transition-colors shadow-xs"
+              className="p-2 rounded-xl hover:bg-emerald-100/70 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
               title="Return to Home"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  {activeAcademy.name}
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  {activeAcademy.subscription_plan}
+                <span className="text-xs font-mono font-bold text-emerald-800 uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded">
+                  {activeAcademy.subscription_plan?.toUpperCase() || 'PRO'} ALLIANCE
                 </span>
+                <span className="text-xs text-slate-500 font-mono">ID: {activeAcademy.id}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                B2B2C Seat Alliance · All enrolled students unlock Sovereign Premium &amp; Pro tiers
-              </p>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                {activeAcademy.name}
+              </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {onNavigateToSignup && (
-              <button
-                type="button"
-                onClick={onNavigateToSignup}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>New Academy (₦25,000/mo)</span>
-              </button>
-            )}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 border border-emerald-300 text-emerald-800 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <ExternalLink className="w-4 h-4" />}
+              <span>{copiedLink ? 'Link Copied!' : 'Copy Student Invite Link'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyCode}
+              className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              <span className="font-mono">{copiedCode ? 'Copied' : activeAcademy.join_code || activeAcademy.joinCode}</span>
+            </button>
           </div>
         </div>
 
-        {/* Status Toast */}
         {statusMessage && (
-          <div className="p-3 bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
             <span>{statusMessage}</span>
           </div>
         )}
 
-        {/* 3 Metric Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Seat Occupancy */}
-          <div className="bg-white border border-emerald-200/90 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-              <span>Seat Allocation</span>
+        {/* 4 Analytics Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-5 rounded-2xl bg-white border border-emerald-200 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span>Seats Occupied</span>
               <Users className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-slate-900">{seatsUsed}</span>
-              <span className="text-xs text-slate-500">/ {seatCap} max seats</span>
+              <span className="text-3xl font-black font-mono text-slate-900">{seatsUsed}</span>
+              <span className="text-xs text-slate-500 font-medium">/ {seatCap} max</span>
             </div>
-            {/* Progress Bar */}
             <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  occupancyPercent > 90 ? 'bg-amber-500' : 'bg-emerald-500'
-                }`}
-                style={{ width: `${occupancyPercent}%` }}
-              />
+              <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${occupancyPercent}%` }} />
             </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-              <span>{seatsRemaining} seats remaining</span>
-              <span className="font-semibold text-slate-700">{occupancyPercent}% Occupied</span>
-            </div>
+            <span className="text-[11px] text-slate-500 font-medium block">
+              {seatsRemaining} seats remaining for new cadets
+            </span>
           </div>
 
-          {/* Card 2: Student Join Code */}
-          <div className="bg-white border border-emerald-200/90 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-              <span>Alliance Join Code</span>
-              <Shield className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-mono font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl">
-                {activeAcademy.join_code}
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyCode}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 transition-colors"
-                title="Copy Code"
-              >
-                {copiedCode ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-xs rounded-xl border border-emerald-200 transition-colors flex items-center justify-center gap-1.5"
-            >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Link Copied to Clipboard!' : 'Copy Direct Student Join Link'}</span>
-            </button>
-          </div>
-
-          {/* Card 3: Alliance Scoreboard */}
-          <div className="bg-white border border-emerald-200/90 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-              <span>Alliance Power Ranking</span>
-              <Award className="w-4 h-4 text-amber-500" />
+          <div className="p-5 rounded-2xl bg-white border border-emerald-200 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span>Total Alliance XP</span>
+              <Zap className="w-4 h-4 text-amber-500" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-amber-600">{totalAllianceXp.toLocaleString()}</span>
-              <span className="text-xs text-slate-500">Total Alliance XP</span>
+              <span className="text-3xl font-black font-mono text-amber-700">{totalAllianceXp.toLocaleString()}</span>
+              <span className="text-xs text-amber-600 font-bold">XP</span>
             </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-2">
-              <span>{totalChallengesSolved} Solved Puzzles</span>
-              <span className="font-semibold text-emerald-700">Top 5% Alliances</span>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION: Top Academies of the Month Leaderboard */}
-        <div className="bg-white border border-emerald-200/90 rounded-2xl p-6 shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                <h3 className="text-base font-bold text-slate-900">Monthly Academy Alliance League</h3>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Top academies ranked by aggregate points. Last month&apos;s champions stand honored while the live battle for this month progresses!
-              </p>
-            </div>
-
-            {/* Toggle Tabs: Current Month Live Battle vs Last Month Champions */}
-            <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold gap-1 self-start sm:self-center">
-              <button
-                type="button"
-                onClick={() => setLeagueTab('current_month')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all ${
-                  leagueTab === 'current_month'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Flame className="w-3.5 h-3.5 text-amber-300" />
-                <span>Current Month (Live Battle)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setLeagueTab('last_month')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all ${
-                  leagueTab === 'last_month'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Trophy className="w-3.5 h-3.5 text-amber-300" />
-                <span>Last Month Champions</span>
-              </button>
-            </div>
+            <span className="text-[11px] text-slate-500 font-medium block">
+              Combined score from all registered cadets
+            </span>
           </div>
 
-          {/* Leaderboard Table */}
-          <div className="overflow-x-auto border border-emerald-100 rounded-xl">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-emerald-50/70 border-b border-emerald-100 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Rank</th>
-                  <th className="py-3 px-4">Academy Alliance</th>
-                  <th className="py-3 px-4 text-center">Active Students</th>
-                  <th className="py-3 px-4 text-right">Challenges Solved</th>
-                  <th className="py-3 px-4 text-right">Alliance Points</th>
-                  <th className="py-3 px-4 text-center">Honors</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-emerald-50">
-                {(leagueTab === 'current_month' ? currentMonthStandings : lastMonthStandings).map((standing) => {
-                  const isCurrentAcademy = standing.academyId === activeAcademy.id;
-                  return (
-                    <tr
-                      key={standing.academyId}
-                      className={`transition-colors ${
-                        isCurrentAcademy ? 'bg-emerald-50/80 font-bold text-emerald-950' : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
-                        {standing.rank === 1 ? '🥇 1' : standing.rank === 2 ? '🥈 2' : standing.rank === 3 ? '🥉 3' : `#${standing.rank}`}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">{standing.academyName}</span>
-                          {isCurrentAcademy && (
-                            <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-bold">
-                              Your Alliance
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-center font-mono text-slate-600 font-semibold">
-                        {standing.activeStudents} cadets
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-slate-700">
-                        {standing.challengesSolved.toLocaleString()}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-black text-emerald-800 text-sm">
-                        {standing.points.toLocaleString()} pts
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {standing.badge ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                            {standing.badge}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 font-mono text-[10px]">Ranked</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="p-5 rounded-2xl bg-white border border-emerald-200 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span>Challenges Conquered</span>
+              <Award className="w-4 h-4 text-sky-600" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black font-mono text-sky-800">{totalChallengesSolved.toLocaleString()}</span>
+              <span className="text-xs text-slate-500 font-medium">quests</span>
+            </div>
+            <span className="text-[11px] text-slate-500 font-medium block">
+              Pyodide modules verified and completed
+            </span>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-emerald-200 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span>Entitlement Tier</span>
+              <Shield className="w-4 h-4 text-purple-600" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-purple-800 uppercase font-mono">
+                {activeAcademy.subscription_plan || 'Pro'}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-500 font-medium block">
+              Unlocks Tier 6–10 Pro Quests for all enrolled seats
+            </span>
           </div>
         </div>
 
         {/* Enrolled Students Table */}
-        <div className="bg-white border border-emerald-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+        <div className="bg-white border border-emerald-200 rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-bold text-slate-900">Enrolled Academy Students</h3>
               <p className="text-xs text-slate-500">
-                Students receive instant {activeAcademy.subscription_plan.toUpperCase()} tier benefits as long as they hold an active seat.
+                Students receive instant {activeAcademy.subscription_plan?.toUpperCase() || 'PRO'} tier benefits while holding an active seat.
               </p>
             </div>
             <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
@@ -374,58 +463,68 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-emerald-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-2.5 px-3">Student Handle</th>
-                  <th className="py-2.5 px-3">Student User ID</th>
-                  <th className="py-2.5 px-3 text-right">Points</th>
-                  <th className="py-2.5 px-3 text-right">Quests Solved</th>
-                  <th className="py-2.5 px-3 text-right">Last Active</th>
-                  <th className="py-2.5 px-3 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {members.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-3 font-semibold text-slate-900">
-                      {m.username}
-                      {m.user_id === currentProfile.id && (
-                        <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                          You
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 font-mono text-slate-500 text-[11px]">{m.user_id}</td>
-                    <td className="py-3 px-3 font-mono text-right text-emerald-700 font-semibold">
-                      {m.xp_points || 0} XP
-                    </td>
-                    <td className="py-3 px-3 font-mono text-right text-slate-700">
-                      {m.challenges_solved || 0}
-                    </td>
-                    <td className="py-3 px-3 font-mono text-right text-slate-500 text-[11px]">
-                      {m.last_active || m.joined_at}
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveStudent(m.user_id || m.userId || '', m.username)}
-                        className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                        title="Vacate seat"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
+          {members.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <Users className="w-8 h-8 text-slate-400 mx-auto" />
+              <div className="font-bold text-slate-700 text-sm">No Students Enrolled Yet</div>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Share your invite code <code className="font-mono font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{activeAcademy.join_code || activeAcademy.joinCode}</code> with your students to populate your alliance roster.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-emerald-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                    <th className="py-2.5 px-3">Student Handle</th>
+                    <th className="py-2.5 px-3">Student User ID</th>
+                    <th className="py-2.5 px-3 text-right">Points</th>
+                    <th className="py-2.5 px-3 text-right">Quests Solved</th>
+                    <th className="py-2.5 px-3 text-right">Last Active</th>
+                    <th className="py-2.5 px-3 text-center">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {members.map((m) => (
+                    <tr key={m.id} className="hover:bg-slate-50">
+                      <td className="py-3 px-3 font-semibold text-slate-900">
+                        {m.username}
+                        {m.user_id === currentProfile.id && (
+                          <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                            You
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-slate-500 text-[11px]">{m.user_id}</td>
+                      <td className="py-3 px-3 font-mono text-right text-emerald-700 font-semibold">
+                        {m.xp_points || 0} XP
+                      </td>
+                      <td className="py-3 px-3 font-mono text-right text-slate-700">
+                        {m.challenges_solved || 0}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-right text-slate-500 text-[11px]">
+                        {m.last_active || m.joined_at}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStudent(m.user_id || m.userId || '', m.username)}
+                          className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                          title="Vacate seat"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Subscription & Billing Details */}
-        <div className="bg-white border border-emerald-200/90 rounded-2xl p-6 shadow-xs space-y-3">
+        <div className="bg-white border border-emerald-200 rounded-2xl p-6 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-emerald-600" />
@@ -436,7 +535,7 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-500">
-            Next renewal on <strong>{activeAcademy.next_billing_date || 'Next billing cycle'}</strong> via Telegram Stars recurring invoice.
+            Next renewal on <strong>{activeAcademy.next_billing_date || 'Next monthly cycle'}</strong> via Telegram Stars recurring invoice.
           </p>
         </div>
       </div>

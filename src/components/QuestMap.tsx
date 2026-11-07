@@ -18,6 +18,7 @@ import {
 import { QUESTS } from '../data/quests';
 import { Profile, UserProgress } from '../types';
 import { SupabaseStore } from '../lib/supabase';
+import pythonMasterInsignia from '../assets/images/quest_cyber_badge_1791795630494.jpg';
 
 interface QuestMapProps {
   profile: Profile;
@@ -447,11 +448,13 @@ export const QuestMap: React.FC<QuestMapProps> = ({
           </div>
 
           <div className="lg:col-span-4 flex justify-center">
-            <div className="w-28 h-28 rounded-xl overflow-hidden border border-amber-500/40 shadow-xl bg-slate-900 p-1">
+            <div className="w-28 h-28 rounded-xl overflow-hidden border border-amber-500/40 shadow-xl bg-slate-900 p-1 flex items-center justify-center">
               <img
-                src="/src/assets/images/quest_cyber_badge_1791795630494.jpg"
+                src={pythonMasterInsignia}
                 alt="Python Master Coding Quest Achievement Badge"
-                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/quest_cyber_badge.jpg';
+                }}
                 className="w-full h-full object-cover rounded-lg"
               />
             </div>

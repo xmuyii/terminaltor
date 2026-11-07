@@ -21,49 +21,36 @@ interface LeaderboardModalProps {
   currentProfile: Profile;
 }
 
-// Deterministic seed generation for rich demo data across all four boards
-const generateDemoBoard = (timeframe: Timeframe, myProfile: Profile): LeaderboardRecord[] => {
-  const baseStudents = [
-    { username: 'AdaLovelace', factor: 1.0, daily: 180, weekly: 650, monthly: 1950, allTime: 4850, solved: 48 },
-    { username: 'AlanTuring', factor: 0.95, daily: 160, weekly: 580, monthly: 1720, allTime: 4420, solved: 44 },
-    { username: 'GuidoVanRossum', factor: 0.90, daily: 140, weekly: 520, monthly: 1600, allTime: 4100, solved: 41 },
-    { username: 'GraceHopper', factor: 0.85, daily: 130, weekly: 490, monthly: 1480, allTime: 3890, solved: 39 },
-    { username: 'LinusTorvalds', factor: 0.82, daily: 120, weekly: 460, monthly: 1410, allTime: 3650, solved: 37 },
-    { username: 'MargaretHamilton', factor: 0.78, daily: 110, weekly: 430, monthly: 1350, allTime: 3420, solved: 34 },
-    { username: 'ClaudeShannon', factor: 0.75, daily: 95, weekly: 390, monthly: 1220, allTime: 3180, solved: 32 },
-    { username: 'BarbaraLiskov', factor: 0.70, daily: 85, weekly: 360, monthly: 1150, allTime: 2950, solved: 30 },
-    { username: 'DonaldKnuth', factor: 0.68, daily: 75, weekly: 330, monthly: 1080, allTime: 2840, solved: 28 },
-    { username: 'KenThompson', factor: 0.65, daily: 70, weekly: 310, monthly: 990, allTime: 2680, solved: 27 },
-    { username: 'DennisRitchie', factor: 0.62, daily: 60, weekly: 290, monthly: 920, allTime: 2510, solved: 25 },
-    { username: 'TimBernersLee', factor: 0.58, daily: 55, weekly: 270, monthly: 870, allTime: 2390, solved: 24 },
-    { username: 'KatherineJohnson', factor: 0.55, daily: 50, weekly: 250, monthly: 810, allTime: 2240, solved: 22 },
-    { username: 'RadiaPerlman', factor: 0.52, daily: 45, weekly: 230, monthly: 760, allTime: 2110, solved: 21 },
-    { username: 'BjarneStroustrup', factor: 0.48, daily: 40, weekly: 210, monthly: 700, allTime: 1980, solved: 20 },
-    { username: 'JohnCarmack', factor: 0.45, daily: 35, weekly: 190, monthly: 650, allTime: 1850, solved: 18 },
-    { username: 'SatoshiNakamoto', factor: 0.42, daily: 30, weekly: 180, monthly: 610, allTime: 1720, solved: 17 },
-    { username: 'LeslieLamport', factor: 0.38, daily: 25, weekly: 160, monthly: 550, allTime: 1590, solved: 16 },
-    { username: 'VintCerf', factor: 0.35, daily: 20, weekly: 140, monthly: 490, allTime: 1420, solved: 14 },
-    { username: 'ShafiGoldwasser', factor: 0.32, daily: 15, weekly: 120, monthly: 430, allTime: 1280, solved: 13 },
-  ];
+// Genuine board generation displaying only actual registered players and current user
+const generateRealBoard = (timeframe: Timeframe, myProfile: Profile): LeaderboardRecord[] => {
+  const records: LeaderboardRecord[] = [];
 
-  // Map to records
-  const records: LeaderboardRecord[] = baseStudents.map((s, idx) => {
-    let pts = s.allTime;
-    if (timeframe === 'daily') pts = s.daily;
-    else if (timeframe === 'weekly') pts = s.weekly;
-    else if (timeframe === 'monthly') pts = s.monthly;
+  // Read any registered cadets from local store or cache
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('sovereign_registered_cadets_v1');
+      if (stored) {
+        const cadets = JSON.parse(stored);
+        if (Array.isArray(cadets)) {
+          cadets.forEach((c) => {
+            if (c.id !== myProfile.id && c.username !== myProfile.username) {
+              records.push({
+                rank: 0,
+                userId: c.id,
+                username: c.username,
+                avatarUrl: c.avatar_url,
+                points: c.xp_points || 0,
+                challengesSolved: Math.round((c.xp_points || 0) / 35),
+                lastActive: c.last_active || 'Recently',
+              });
+            }
+          });
+        }
+      }
+    } catch {}
+  }
 
-    return {
-      rank: 0, // will assign after sorting
-      userId: `user-sim-${idx}`,
-      username: s.username,
-      points: pts,
-      challengesSolved: Math.max(1, Math.round(s.solved * (timeframe === 'daily' ? 0.15 : timeframe === 'weekly' ? 0.35 : timeframe === 'monthly' ? 0.7 : 1.0))),
-      lastActive: `${idx * 14 + 5}m ago`,
-    };
-  });
-
-  // Inject current user with realistic timeframe values
+  // Include current user with genuine stats
   const currentXp = myProfile.xp_points || 0;
   let myPoints = currentXp;
   if (timeframe === 'daily') myPoints = Math.min(currentXp, 120);
@@ -74,20 +61,18 @@ const generateDemoBoard = (timeframe: Timeframe, myProfile: Profile): Leaderboar
     rank: 0,
     userId: myProfile.id,
     username: myProfile.username,
-    points: Math.max(10, myPoints),
-    challengesSolved: Math.max(1, Math.round(currentXp / 35)),
+    points: myPoints,
+    challengesSolved: Math.round(currentXp / 35),
     lastActive: 'Just now',
   });
 
   // Sort strictly descending by points, tie-break by username
   records.sort((a, b) => b.points - a.points || a.username.localeCompare(b.username));
 
-  // Assign ranks
-  records.forEach((r, idx) => {
-    r.rank = idx + 1;
-  });
-
-  return records;
+  return records.map((r, idx) => ({
+    ...r,
+    rank: idx + 1,
+  }));
 };
 
 export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
@@ -169,7 +154,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
   const boardData = useMemo(() => {
     if (timeframe === 'friends') return [];
     const t0 = performance.now();
-    const data = generateDemoBoard(timeframe, currentProfile);
+    const data = generateRealBoard(timeframe, currentProfile);
     const dur = Math.max(1.2, performance.now() - t0);
     setCacheLatencyMs(Number(dur.toFixed(1)));
     return data;
